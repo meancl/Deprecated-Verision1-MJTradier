@@ -136,7 +136,7 @@ namespace MJTradier
                 string sCode = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "종목코드");
 
                 StreamWriter sw = new StreamWriter(new FileStream(@"기본정보\" + sCode.Trim() + ".txt", FileMode.Create));
-                sw.Write(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "종목명").Trim() + "," + (long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통주식")) * 1000).ToString() + "," + axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통비율").Trim() + "," + axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "250최고가대비율").Trim() + "," + axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "250최저가대비율").Trim() +  (long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "상장주식")) * 1000).ToString() + "," + axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가").Trim() );
+                sw.Write(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "종목명").Trim() + "," + (long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통주식")) * 1000).ToString() + "," + axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통비율").Trim() + "," + axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "250최고가대비율").Trim() + "," + axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "250최저가대비율").Trim() +  (long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "상장주식")) * 1000).ToString() + "," + Math.Abs(int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가"))).ToString());
                 sw.Close();
 
                 nRequestCnt++;

@@ -243,6 +243,8 @@ namespace MJTradier
         public int nCurMarketMin = -1;
         public int nPrevMarektMin;
 
+        public Random rand = new Random();
+
         public Form1()
         {
 
@@ -507,7 +509,7 @@ namespace MJTradier
                     eachStockArray[nCurIdx].f250TopCompare = double.Parse(sBasicInfoSplited[3]);
                     eachStockArray[nCurIdx].f250BottomCompare = double.Parse(sBasicInfoSplited[4]);
                     eachStockArray[nCurIdx].lTotalNumOfStock = long.Parse(sBasicInfoSplited[5]);
-                    eachStockArray[nCurIdx].nYesterdayEndPrice = int.Parse(sBasicInfoSplited[6]);
+                    eachStockArray[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(sBasicInfoSplited[6]));
 
 
                     if (eachStockArray[nCurIdx].nMarketGubun == KOSDAQ_ID)
@@ -767,14 +769,14 @@ namespace MJTradier
                     eachStockArray[nCurIdx].lShareOutstanding = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통주식")) * 1000;
                     eachStockArray[nCurIdx].fShareOutstandingRatio = double.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통비율"));
                     eachStockArray[nCurIdx].lTotalNumOfStock = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "상장주식")) * 1000; ;
-                    eachStockArray[nCurIdx].nYesterdayEndPrice = int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가"));
+                    eachStockArray[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가")));
                 }
                 catch (Exception ex)
                 {
                     eachStockArray[nCurIdx].lShareOutstanding = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "상장주식")) * 1000;
                     eachStockArray[nCurIdx].fShareOutstandingRatio = 100.0;
                     eachStockArray[nCurIdx].lTotalNumOfStock = eachStockArray[nCurIdx].lShareOutstanding;
-                    eachStockArray[nCurIdx].nYesterdayEndPrice = int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가"));
+                    eachStockArray[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가")));
                 }
                 try
                 {
@@ -1239,6 +1241,7 @@ namespace MJTradier
                             arrKospiIndex[nKospiIndexIdxPointer, 0] = AddTimeBySec(nFirstTime, (nKospiIndexIdxPointer - BRUSH) * 60);
                         }
 
+
                         for (int i = 0; i < nDiff; i++)
                         {
                             if (nKospiIndexIdxPointer < BRUSH)
@@ -1271,6 +1274,24 @@ namespace MJTradier
                             fKospiIndexMax = 0;
                             fKospiIndexMin = 0;
                             nKospiIndexIdxPointer++;
+                        }
+
+                        if (nKospiIndexIdxPointer > BRUSH) // 추세 확인
+                        {
+                            int nRandomi = 10;
+                            int nIdx;
+                            double fInclination = 0;
+                            int nInclinationCnt = 0;
+                            double fResultInclinationEvg;
+                            for(int i = 0; i < nRandomi; i ++)
+                            {
+                                nIdx = rand.Next(nKospiIndexIdxPointer);
+                                fInclination += (fCurKospiIndexUnGap - arrKospiIndex[nIdx, 1]) / SubTimeToTimeAndSec((int)arrKospiIndex[nIdx, 0], SubTimeBySec(nFirstTime, 60));
+                                nInclinationCnt++;
+
+                            }
+                            fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
+
                         }
 
                     }
