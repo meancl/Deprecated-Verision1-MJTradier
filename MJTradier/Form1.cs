@@ -204,8 +204,10 @@ namespace MJTradier
         public StreamWriter swLogMarketSituSec = new StreamWriter(new FileStream(sMessageLogPath + "messageLogMarketSituSec.txt", FileMode.Create));
         public StreamWriter swLogMarketSituMin = new StreamWriter(new FileStream(sMessageLogPath + "messageLogMarketSituMin.txt", FileMode.Create));
 
-        public double[,] arrKospiIndex = new double[BRUSH + 390, 5];
-        public double[,] arrKosdaqIndex = new double[BRUSH + 390, 5];
+
+        public const int REC_NUM = 8;
+        public double[,] arrKospiIndex = new double[BRUSH + 390, REC_NUM];
+        public double[,] arrKosdaqIndex = new double[BRUSH + 390, REC_NUM];
 
         public double fKospiIndexFirst;
         public double fKospiIndexEnd;
@@ -244,6 +246,20 @@ namespace MJTradier
         public int nPrevMarektMin;
 
         public Random rand = new Random();
+
+
+        public int nRandomi = 50;
+        public int nRecentArea = 30;
+        public int nFlowIdx;
+        public int nFlowIdxDiff;
+        public double fInclination;
+        public double fRecentInclination;
+        public int nInclinationCnt;
+        public int nRecentInclinationCnt;
+        public double fFluctuation;
+        public double fResultInclinationEvg;
+        public double fResultRecentInclinationEvg;
+        public double fY;
 
         public Form1()
         {
@@ -492,10 +508,10 @@ namespace MJTradier
                 eachStockArray[nCurIdx].sRealScreenNum = sScreenNum;
                 eachStockArray[nCurIdx].sCode = codes[i];
                 eachStockArray[nCurIdx].nMarketGubun = marketGubun;
-                eachStockArray[nCurIdx].arrRecord = new int[BRUSH + 390,5];
+                eachStockArray[nCurIdx].arrRecord = new double[BRUSH + 390, REC_NUM];
 
 
-                bool isEmpty = false;
+                bool isEmpty = false; 
                 try
                 {
                     sr = new StreamReader(sBasicInfoPath + codes[i] + ".txt");
@@ -1278,19 +1294,42 @@ namespace MJTradier
 
                         if (nKospiIndexIdxPointer > BRUSH) // 추세 확인
                         {
-                            int nRandomi = 10;
-                            int nIdx;
-                            double fInclination = 0;
-                            int nInclinationCnt = 0;
-                            double fResultInclinationEvg;
-                            for(int i = 0; i < nRandomi; i ++)
+
+                            fInclination = 0;
+                            fRecentInclination = 0;
+                            nInclinationCnt = 0;
+                            nRecentInclinationCnt = 0;
+                            fFluctuation = 0;
+
+                            for (int i = 0; i < nRandomi; i++)
                             {
-                                nIdx = rand.Next(nKospiIndexIdxPointer);
-                                fInclination += (fCurKospiIndexUnGap - arrKospiIndex[nIdx, 1]) / SubTimeToTimeAndSec((int)arrKospiIndex[nIdx, 0], SubTimeBySec(nFirstTime, 60));
+                                nFlowIdx = rand.Next(nKospiIndexIdxPointer);
+                                fInclination += (fCurKospiIndexUnGap- arrKospiIndex[nFlowIdx, 2]) / SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nFlowIdx, 0]);
                                 nInclinationCnt++;
 
                             }
                             fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
+
+                            for (int i = 0; i < nRandomi; i++)
+                            {
+                                if (nKospiIndexIdxPointer >= nRecentArea)
+                                {
+                                    nFlowIdx = rand.Next(nKospiIndexIdxPointer - nRecentArea, nKospiIndexIdxPointer);
+                                }
+                                else
+                                    nFlowIdx = rand.Next(nKospiIndexIdxPointer);
+                                nRecentInclinationCnt++;
+                                fRecentInclination += (fCurKospiIndexUnGap - arrKospiIndex[nFlowIdx, 2]) / SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nFlowIdx, 0]);
+                                nFlowIdxDiff = rand.Next(nKospiIndexIdxPointer);
+
+                                fY = fResultInclinationEvg * SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nFlowIdx, 0]) + fInitKospiIndexUnGap; // 기울기에 따른 linear 함수
+                                fFluctuation += Math.Pow(fY - arrKospiIndex[nFlowIdx, 2], 2); // 변동폭
+                            }
+                            fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
+
+                            arrKospiIndex[nFlowIdx, 5] = fResultInclinationEvg;
+                            arrKospiIndex[nFlowIdx, 6] = fResultRecentInclinationEvg;
+                            arrKospiIndex[nFlowIdx, 7] = fFluctuation;
 
                         }
 
@@ -1343,6 +1382,48 @@ namespace MJTradier
                             fKosdaqIndexMax = 0;
                             fKosdaqIndexMin = 0;
                             nKosdaqIndexIdxPointer++;
+                        }
+
+
+                        if (nKosdaqIndexIdxPointer > BRUSH) // 추세 확인
+                        {
+
+                            fInclination = 0;
+                            fRecentInclination = 0;
+                            nInclinationCnt = 0;
+                            nRecentInclinationCnt = 0;
+                            fFluctuation = 0;
+
+                            for (int i = 0; i < nRandomi; i++)
+                            {
+                                nFlowIdx = rand.Next(nKosdaqIndexIdxPointer);
+                                fInclination += (fCurKosdaqIndexUnGap - arrKosdaqIndex[nFlowIdx, 2]) / SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nFlowIdx, 0]);
+                                nInclinationCnt++;
+
+                            }
+                            fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
+
+                            for (int i = 0; i < nRandomi; i++)
+                            {
+                                if (nKosdaqIndexIdxPointer >= nRecentArea)
+                                {
+                                    nFlowIdx = rand.Next(nKosdaqIndexIdxPointer - nRecentArea, nKosdaqIndexIdxPointer);
+                                }
+                                else
+                                    nFlowIdx = rand.Next(nKosdaqIndexIdxPointer);
+                                nRecentInclinationCnt++;
+                                fRecentInclination += (fCurKosdaqIndexUnGap - arrKosdaqIndex[nFlowIdx, 2]) / SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nFlowIdx, 0]);
+                                nFlowIdxDiff = rand.Next(nKosdaqIndexIdxPointer);
+
+                                fY = fResultInclinationEvg * SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nFlowIdx, 0]) + fInitKosdaqIndexUnGap; // 기울기에 따른 linear 함수
+                                fFluctuation += Math.Pow(fY - arrKosdaqIndex[nFlowIdx, 2], 2); // 변동폭
+                            }
+                            fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
+
+                            arrKosdaqIndex[nFlowIdx, 5] = fResultInclinationEvg;
+                            arrKosdaqIndex[nFlowIdx, 6] = fResultRecentInclinationEvg;
+                            arrKosdaqIndex[nFlowIdx, 7] = fFluctuation;
+
                         }
 
                     }
@@ -1620,10 +1701,10 @@ namespace MJTradier
                             {
                                 if (eachStockArray[nCurIdx].nFsPointer == 0) // 초기
                                 {
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1] = eachStockArray[nCurIdx].nFs;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2] = eachStockArray[nCurIdx].nFs;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 3] = eachStockArray[nCurIdx].nFs;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 4] = eachStockArray[nCurIdx].nFs;
+                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1] = eachStockArray[nCurIdx].nTodayStartPrice;
+                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2] = eachStockArray[nCurIdx].nTodayStartPrice;
+                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 3] = eachStockArray[nCurIdx].nTodayStartPrice;
+                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 4] = eachStockArray[nCurIdx].nTodayStartPrice;
                                 }
                                 else // vi or 거래없는경우
                                 {
@@ -1640,18 +1721,18 @@ namespace MJTradier
 
                                 if (eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1] < eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2]) // 시가 < 종가
                                 {
-                                    maxPart = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2];
-                                    minPart = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1];
+                                    maxPart = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2];
+                                    minPart = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1];
                                 }
                                 else
                                 {
-                                    maxPart = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1];
-                                    minPart = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2];
+                                    maxPart = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1];
+                                    minPart = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2];
                                 }
                                 int EverageFs = (maxPart + minPart) / 2;
 
-                                int maxTop = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 3]; // 고가 
-                                int minBottom = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 4]; // 저가
+                                int maxTop = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 3]; // 고가 
+                                int minBottom = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 4]; // 저가
                                 int EverageMiddle = (maxTop + minBottom) / 2;
 
 
@@ -1659,57 +1740,57 @@ namespace MJTradier
                                 if (eachStockArray[nCurIdx].nMaxFs < maxPart)
                                 {
                                     eachStockArray[nCurIdx].nMaxFs = maxPart;
-                                    eachStockArray[nCurIdx].nMaxTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMaxTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                     eachStockArray[nCurIdx].nMinFs = maxPart;
-                                    eachStockArray[nCurIdx].nMinTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMinTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                 }
 
                                 if (eachStockArray[nCurIdx].nMinFs > minPart)
                                 {
                                     eachStockArray[nCurIdx].nMinFs = minPart;
-                                    eachStockArray[nCurIdx].nMinTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMinTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                 }
 
                                 // 시종가평균
                                 if (eachStockArray[nCurIdx].nMaxEverageFs < EverageFs)
                                 {
                                     eachStockArray[nCurIdx].nMaxEverageFs = EverageFs;
-                                    eachStockArray[nCurIdx].nMaxEverageTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMaxEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                     eachStockArray[nCurIdx].nMinEverageFs = EverageFs;
-                                    eachStockArray[nCurIdx].nMinEverageTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMinEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                 }
                                 if (eachStockArray[nCurIdx].nMinEverageFs > EverageFs)
                                 {
                                     eachStockArray[nCurIdx].nMinEverageFs = EverageFs;
-                                    eachStockArray[nCurIdx].nMinEverageTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMinEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                 }
 
                                 // 저고가
                                 if (eachStockArray[nCurIdx].nMaxTopFs < maxTop)
                                 {
                                     eachStockArray[nCurIdx].nMaxTopFs = maxTop;
-                                    eachStockArray[nCurIdx].nMaxTopTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMaxTopTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                     eachStockArray[nCurIdx].nMinBottomFs = maxTop;
-                                    eachStockArray[nCurIdx].nMinBottomTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMinBottomTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                 }
                                 if (eachStockArray[nCurIdx].nMinBottomFs > minBottom)
                                 {
                                     eachStockArray[nCurIdx].nMinBottomFs = minBottom;
-                                    eachStockArray[nCurIdx].nMinBottomTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMinBottomTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                 }
 
                                 // 저고가평균
                                 if (eachStockArray[nCurIdx].nMaxTopEverageFs < EverageMiddle)
                                 {
                                     eachStockArray[nCurIdx].nMaxTopEverageFs = EverageMiddle;
-                                    eachStockArray[nCurIdx].nMaxTopEverageTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMaxTopEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                     eachStockArray[nCurIdx].nMinBottomEverageFs = EverageMiddle;
-                                    eachStockArray[nCurIdx].nMinBottomEverageTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMinBottomEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                 }
                                 if (eachStockArray[nCurIdx].nMinBottomEverageFs > EverageMiddle)
                                 {
                                     eachStockArray[nCurIdx].nMinBottomEverageFs = EverageMiddle;
-                                    eachStockArray[nCurIdx].nMinBottomEverageTime = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    eachStockArray[nCurIdx].nMinBottomEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
                                 }
                             }
 
@@ -1720,6 +1801,47 @@ namespace MJTradier
                         eachStockArray[nCurIdx].nLastPointer = 0;
                         eachStockArray[nCurIdx].nMaxPointer = 0;
                         eachStockArray[nCurIdx].nMinPointer = 0;
+
+                        if (eachStockArray[nCurIdx].nIdxPointer > BRUSH) // 추세 확인
+                        {
+
+                            fInclination = 0;
+                            fRecentInclination = 0;
+                            nInclinationCnt = 0;
+                            nRecentInclinationCnt = 0;
+                            fFluctuation = 0;
+
+                            for (int i = 0; i < nRandomi; i++)
+                            {
+                                nFlowIdx = rand.Next(eachStockArray[nCurIdx].nIdxPointer);
+                                fInclination += (eachStockArray[nCurIdx].nFs - eachStockArray[nCurIdx].arrRecord[nFlowIdx, 2]) / SubTimeToTimeAndSec(nSharedTime, (int)eachStockArray[nCurIdx].arrRecord[nFlowIdx, 0]);
+                                nInclinationCnt++;
+
+                            }
+                            fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
+
+                            for (int i = 0; i < nRandomi; i++)
+                            {
+                                if (eachStockArray[nCurIdx].nIdxPointer >= nRecentArea)
+                                {
+                                    nFlowIdx = rand.Next(eachStockArray[nCurIdx].nIdxPointer - nRecentArea, eachStockArray[nCurIdx].nIdxPointer);
+                                }
+                                else
+                                    nFlowIdx = rand.Next(eachStockArray[nCurIdx].nIdxPointer);
+                                nRecentInclinationCnt++;
+                                fRecentInclination += (eachStockArray[nCurIdx].nFs - eachStockArray[nCurIdx].arrRecord[nFlowIdx, 2]) / SubTimeToTimeAndSec(nSharedTime, (int)eachStockArray[nCurIdx].arrRecord[nFlowIdx, 0]);
+                                nFlowIdxDiff = rand.Next(eachStockArray[nCurIdx].nIdxPointer);
+
+                                fY = fResultInclinationEvg * SubTimeToTimeAndSec(nSharedTime, (int)eachStockArray[nCurIdx].arrRecord[nFlowIdxDiff, 0]) + eachStockArray[nCurIdx].nTodayStartPrice; // 기울기에 따른 linear 함수
+                                fFluctuation += Math.Pow(fY - eachStockArray[nCurIdx].arrRecord[nFlowIdxDiff, 2], 2); // 변동폭
+                            }
+                            fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
+
+                            eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 5] = fResultInclinationEvg;
+                            eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6] = fResultRecentInclinationEvg;
+                            eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 7] = fFluctuation;
+
+                        }
                     }
 
 

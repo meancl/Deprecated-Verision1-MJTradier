@@ -108,7 +108,7 @@
             public int nFirstPointer;
             public int nLastPointer;
 
-            public int[,] arrRecord;
+            public double[,] arrRecord;
 
             // 시종가
             public int nMaxFs;
@@ -195,6 +195,10 @@
             public long lPrevTotalPriceOfStock;
             public long lCurTotalPriceOfStock;
 
+
+            public double fEverageFlowLine;
+            public double fRecentEverageFlowLine;
+            public double fFluctuationVar;
         }
 
 
