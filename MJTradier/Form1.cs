@@ -250,7 +250,9 @@ namespace MJTradier
 
         public Random rand = new Random();
 
-
+        public double fKospiAngleDirection;
+        public double fKosdaqAngleDirection;
+        
         public int nRandomi = 50;
         public int nRecentArea = 30;
         public int nFlowIdx;
@@ -1323,6 +1325,79 @@ namespace MJTradier
                                 arrKospiIndex[nKospiIndexIdxPointer, 6] = fResultRecentInclinationEvg;
                                 arrKospiIndex[nKospiIndexIdxPointer, 7] = Math.Sqrt(fFluctuation);
 
+
+                                double fN = fResultInclinationEvg;
+                                double fM = fResultRecentInclinationEvg;
+                                int nNDown = 0;
+                                int nNUp = 0;
+
+                                while (fN > 10)
+                                {
+                                    nNDown++;
+                                    fN /= 10;
+                                }
+                                while (fN < 1)
+                                {
+                                    nNUp++;
+                                    fN *= 10;
+                                }
+                                for (i = 0; i < nNDown; i++)
+                                {
+                                    fM /= 10;
+                                }
+                                for (i = 0; i < nNUp; i++)
+                                {
+                                    fM *= 10;
+                                }
+
+                                if (fN == fM) // same
+                                {
+                                    fKospiAngleDirection = 0;
+                                }
+                                else if (fN * fM == -1) // -1
+                                {
+                                    fKospiAngleDirection = 90;
+                                }
+                                else if (-1 < fN * fM) // -1 < x
+                                {
+                                    if (fN * fM < 0)  // -1 < x < 0
+                                    {
+                                        // 분자만 양수로 만들면 된다.
+                                        if (fN < fM)
+                                        {
+                                            fKospiAngleDirection = 180 - Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                        else // fResultRecentInclinationEvg < fResultInclinationEvg 
+                                        {
+                                            fKospiAngleDirection = 180 - Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                    }
+                                    else // 0 <= x 
+                                    {
+                                        // 분자만 양수로 만들면 된다.
+                                        if (fN < fM)
+                                        {
+                                            fKospiAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                        else // fResultRecentInclinationEvg < fResultInclinationEvg 
+                                        {
+                                            fKospiAngleDirection = Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                    }
+                                }
+                                else // x  < -1
+                                {
+                                    // 분자를 음수로 만들면 된다.
+                                    if (fN < fM)
+                                    {
+                                        fKospiAngleDirection = Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                    }
+                                    else
+                                    {
+                                        fKospiAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                    }
+                                }
+
                             }
                         }
                     }
@@ -1405,9 +1480,80 @@ namespace MJTradier
 
                                 arrKosdaqIndex[nKosdaqIndexIdxPointer, 5] = fResultInclinationEvg;
                                 arrKosdaqIndex[nKosdaqIndexIdxPointer, 6] = fResultRecentInclinationEvg;
-
                                 arrKosdaqIndex[nKosdaqIndexIdxPointer, 7] = Math.Sqrt(fFluctuation);
 
+
+                                double fN = fResultInclinationEvg;
+                                double fM = fResultRecentInclinationEvg;
+                                int nNDown = 0;
+                                int nNUp = 0;
+
+                                while (fN > 10)
+                                {
+                                    nNDown++;
+                                    fN /= 10;
+                                }
+                                while (fN < 1)
+                                {
+                                    nNUp++;
+                                    fN *= 10;
+                                }
+                                for (i = 0; i < nNDown; i++)
+                                {
+                                    fM /= 10;
+                                }
+                                for (i = 0; i < nNUp; i++)
+                                {
+                                    fM *= 10;
+                                }
+
+                                if (fN == fM) // same
+                                {
+                                    fKosdaqAngleDirection = 0;
+                                }
+                                else if (fN * fM == -1) // -1
+                                {
+                                    fKosdaqAngleDirection = 90;
+                                }
+                                else if (-1 < fN * fM) // -1 < x
+                                {
+                                    if (fN * fM < 0)  // -1 < x < 0
+                                    {
+                                        // 분자만 양수로 만들면 된다.
+                                        if (fN < fM)
+                                        {
+                                            fKosdaqAngleDirection = 180 - Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                        else // fResultRecentInclinationEvg < fResultInclinationEvg 
+                                        {
+                                            fKosdaqAngleDirection = 180 - Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                    }
+                                    else // 0 <= x 
+                                    {
+                                        // 분자만 양수로 만들면 된다.
+                                        if (fN < fM)
+                                        {
+                                            fKosdaqAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                        else // fResultRecentInclinationEvg < fResultInclinationEvg 
+                                        {
+                                            fKosdaqAngleDirection = Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                    }
+                                }
+                                else // x  < -1
+                                {
+                                    // 분자를 음수로 만들면 된다.
+                                    if (fN < fM)
+                                    {
+                                        fKosdaqAngleDirection = Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                    }
+                                    else
+                                    {
+                                        fKosdaqAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                    }
+                                }
                             }
                         }
                     }
@@ -1444,11 +1590,11 @@ namespace MJTradier
                     {
                         nCurMarketSec = nSharedTime;
                         swLogMarketSituSec.WriteLine(nSharedTime.ToString() + "\t" 
-                            + Math.Round(fKosdaqGap,nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7], nR).ToString() + "\t"
+                            + Math.Round(fKosdaqGap,nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(fKosdaqAngleDirection,nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7], nR).ToString() + "\t"
                             + Math.Round(fCurKosdaqIndexGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqGapInterestRatio * 100, nR).ToString() + "\t"
                             + Math.Round(fCurKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqUnGapInterestRatio * 100, nR).ToString() + "\t" 
                            
-                            + Math.Round(fKospiGap, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7], nR).ToString() + "\t"
+                            + Math.Round(fKospiGap, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(fKospiAngleDirection, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7], nR).ToString() + "\t"
                             + Math.Round(fCurKospiIndexGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexGap, nR).ToString() + "\t" + Math.Round(fCurKospiGapInterestRatio * 100, nR).ToString() + "\t"
                             + Math.Round(fCurKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKospiUnGapInterestRatio * 100, nR).ToString()
                             );
@@ -1458,11 +1604,11 @@ namespace MJTradier
                     {
                         nCurMarketMin = (int)(SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
                         swLogMarketSituMin.WriteLine(nSharedTime.ToString() + "\t"
-                            + Math.Round(fKosdaqGap, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7], nR).ToString() + "\t"
+                            + Math.Round(fKosdaqGap, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(fKosdaqAngleDirection, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7], nR).ToString() + "\t"
                             + Math.Round(fCurKosdaqIndexGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqGapInterestRatio * 100, nR).ToString() + "\t"
-                            + Math.Round(fCurKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqUnGapInterestRatio * 100, nR).ToString() + "\t" 
+                            + Math.Round(fCurKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqUnGapInterestRatio * 100, nR).ToString() + "\t"
 
-                            + Math.Round(fKospiGap, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7], nR).ToString() + "\t"
+                            + Math.Round(fKospiGap, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(fKospiAngleDirection, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7], nR).ToString() + "\t"
                             + Math.Round(fCurKospiIndexGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexGap, nR).ToString() + "\t" + Math.Round(fCurKospiGapInterestRatio * 100, nR).ToString() + "\t"
                             + Math.Round(fCurKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKospiUnGapInterestRatio * 100, nR).ToString()
                             );
@@ -1840,8 +1986,79 @@ namespace MJTradier
                                     eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6] = fResultRecentInclinationEvg / GetKosdaqGap(eachStockArray[nCurIdx].nFs);
                                     eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 7] = Math.Sqrt(fFluctuation) / GetKosdaqGap(eachStockArray[nCurIdx].nFs);
                                 }
-                                
 
+                                double fN = fResultInclinationEvg;
+                                double fM = fResultRecentInclinationEvg;
+                                int nNDown = 0;
+                                int nNUp = 0;
+
+                                while( fN > 10)
+                                {
+                                    nNDown++;
+                                    fN /= 10;
+                                }
+                                while( fN < 1)
+                                {
+                                    nNUp++;
+                                    fN *= 10;
+                                }
+                                for (i = 0; i < nNDown; i++)
+                                {
+                                    fM /= 10;
+                                }
+                                for (i = 0; i < nNUp; i++)
+                                {
+                                    fM *= 10;
+                                }
+
+                                if (fN == fM) // same
+                                {
+                                    eachStockArray[nCurIdx].fAngleDirection = 0;
+                                }
+                                else if(fN * fM == -1) // -1
+                                {
+                                    eachStockArray[nCurIdx].fAngleDirection =  90;
+                                }
+                                else if( -1 < fN * fM) // -1 < x
+                                {
+                                    if (fN * fM < 0)  // -1 < x < 0
+                                    {
+                                        // 분자만 양수로 만들면 된다.
+                                        if (fN < fM) 
+                                        {
+                                            eachStockArray[nCurIdx].fAngleDirection = 180 - Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                        else // fResultRecentInclinationEvg < fResultInclinationEvg 
+                                        {
+                                            eachStockArray[nCurIdx].fAngleDirection = 180 - Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                    }
+                                    else // 0 <= x 
+                                    {
+                                        // 분자만 양수로 만들면 된다.
+                                        if (fN < fM)
+                                        {
+                                            eachStockArray[nCurIdx].fAngleDirection =  Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                        else // fResultRecentInclinationEvg < fResultInclinationEvg 
+                                        {
+                                            eachStockArray[nCurIdx].fAngleDirection = Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                        }
+                                    }
+                                }
+                                else // x  < -1
+                                {
+                                    // 분자를 음수로 만들면 된다.
+                                    if (fN < fM)
+                                    {
+                                        eachStockArray[nCurIdx].fAngleDirection = Math.Atan((fN - fM) / (1 + fN * fM)) * (180 / Math.PI);
+                                    }
+                                    else
+                                    {
+                                        eachStockArray[nCurIdx].fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                                    }
+                                }
+                                
                             }
                         }
 
@@ -2272,11 +2489,11 @@ namespace MJTradier
 
                     if(eachStockArray[nCurIdx].nMarketGubun == KOSPI_ID)
                     {
-                        eachStockArray[nCurIdx].swLog.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7], nR).ToString());
+                        eachStockArray[nCurIdx].swLog.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 5], nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6], nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fAngleDirection, nR).ToString() + "\t" +  Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 7], nR).ToString() + "\t" + eachStockArray[nCurIdx].nMaxFs.ToString() + "\t" + Math.Round(((double)(eachStockArray[nCurIdx].nMaxFs - eachStockArray[nCurIdx].nFs) / eachStockArray[nCurIdx].nYesterdayEndPrice),nR).ToString() + "\t" + eachStockArray[nCurIdx].nMaxTime.ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMaxTime).ToString());
                     }
                     else
                     {
-                        eachStockArray[nCurIdx].swLog.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7], nR).ToString());
+                        eachStockArray[nCurIdx].swLog.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 5], nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6], nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fAngleDirection, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 7], nR).ToString() + "\t" + eachStockArray[nCurIdx].nMaxFs.ToString() + "\t" + Math.Round(((double)(eachStockArray[nCurIdx].nMaxFs - eachStockArray[nCurIdx].nFs) / eachStockArray[nCurIdx].nYesterdayEndPrice), nR).ToString()  + "\t" + eachStockArray[nCurIdx].nMaxTime.ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMaxTime).ToString());
                     }
                     
 
