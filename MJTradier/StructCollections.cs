@@ -145,8 +145,13 @@
             public int nUpgradeTime; // 이전 power와의 차이를 기록하기 위한 시간변수
            
             public long lCurTradeAmount;
+            public long lCurTradeAmountOnlyUp;
+            public long lCurTradeAmountOnlyDown;
             public double fCurTradeAmountRatio;
-
+            public double fCurTradeAmountRatioOnlyUp;
+            public double fCurTradeAmountRatioOnlyDown;
+            public double fAngleDirection;
+            public System.IO.StreamWriter swLog;
 
 
             /// <summary>
