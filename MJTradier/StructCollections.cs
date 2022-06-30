@@ -151,6 +151,7 @@
             public double fCurTradeAmountRatioOnlyUp;
             public double fCurTradeAmountRatioOnlyDown;
             public double fAngleDirection;
+            public double fZeroBasedAngleDirection;
             public System.IO.StreamWriter swLog;
 
 
