@@ -1,4 +1,6 @@
-﻿namespace MJTradier
+﻿using System;
+
+namespace MJTradier
 {
     public partial class Form1
     {
@@ -102,6 +104,76 @@
         }
 
         
+        double GetAngleBetween(double fN, double fM)
+        {
+            double fAngleDirection;
+
+            if (fN == fM) // same
+            {
+                fAngleDirection = 0;
+            }
+            else if (fN * fM == -1) // -1
+            {
+                if (fN > 0)
+                {
+                    fAngleDirection = -90;
+                }
+                else
+                {
+                    fAngleDirection = 90;
+                }
+            }
+            else
+            {
+                // 각도가 반시계 방향이면 + 
+                //        시계방향이면 -
+                if (fN < fM)
+                {
+
+                    if (fN * fM < 0)
+                    {
+                        if (fN * fM < -1)
+                        {
+                            fAngleDirection = 180 + Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                        }
+                        else
+                        {
+                            fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                        }
+
+
+                    }
+                    else
+                    {
+                        fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                    }
+
+                }
+                else
+                {
+                    if (fN * fM < 0)
+                    {
+                        if (fN * fM < -1)
+                        {
+                            fAngleDirection = -180 + Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                        }
+                        else
+                        {
+                            fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                        }
+
+                    }
+                    else
+                    {
+                        fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
+                    }
+
+                }
+
+            }
+            return fAngleDirection;
+        }
+
         /// KiwoomLibrary Part 종료
         /////////////////////////////////
 

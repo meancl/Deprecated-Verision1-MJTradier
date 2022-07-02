@@ -113,10 +113,11 @@
             // 시종가
             public int nMaxFs;
             public int nMaxTime;
-            public int nMinFs;
+            public int nMinFs;            
             public int nMinTime;
-            public bool isGooiTime;
 
+            public bool isGooiTime;
+            public int nRealMinFs;
             // 시종가 평균
             public int nMaxEverageFs;
             public int nMaxEverageTime;
@@ -150,8 +151,6 @@
             public double fCurTradeAmountRatio;
             public double fCurTradeAmountRatioOnlyUp;
             public double fCurTradeAmountRatioOnlyDown;
-            public double fAngleDirection;
-            public double fZeroBasedAngleDirection;
             public System.IO.StreamWriter swLog;
 
 

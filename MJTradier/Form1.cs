@@ -14,10 +14,10 @@ namespace MJTradier
         // ------------------------------------------------------
         // 숫자 상수 변수
         // ------------------------------------------------------
-        public const long ONE_TRILLION =      1000000000000;
+        public const long ONE_TRILLION = 1000000000000;
         public const long HUNDRED_BILLION = 100000000000;
-        public const long TEN_BILLION =     10000000000;
-        public const int BILLION =            1000000000;
+        public const long TEN_BILLION = 10000000000;
+        public const int BILLION = 1000000000;
         public const int TWENTY_MILLION = 20000000;
         public const int TEN_MILLION = 10000000;
         public const int FIVE_MILLION = 5000000;
@@ -48,7 +48,7 @@ namespace MJTradier
         // ------------------------------------------------------
         private int nEachStockIdx; // 개인구조체의 인덱스를 설정하기 위한 변수 0부터 시작
         private int[] eachStockIdxArray; // 개인구조체의 인덱스를 저장한 배열  //초기화대상
-        EachStock[] eachStockArray;  // 각 주식이 가지는 실시간용 구조체(개인구조체) //초기화대상
+        EachStock[] ea;  // 각 주식이 가지는 실시간용 구조체(개인구조체) //초기화대상
         public int nCurIdx; // 현재 개인구조체의 인덱스
 
         // ------------------------------------------------------
@@ -204,11 +204,13 @@ namespace MJTradier
         public StreamWriter swLogOnlyDown6 = new StreamWriter(new FileStream(sMessageLogPath + "messageLogOnlyDown6.txt", FileMode.Create));
         public StreamWriter swLogOnlyDown8 = new StreamWriter(new FileStream(sMessageLogPath + "messageLogOnlyDown8.txt", FileMode.Create));
 
-        public StreamWriter swLogMarketSituSec = new StreamWriter(new FileStream(sMessageLogPath + "messageLogMarketSituSec.txt", FileMode.Create));
-        public StreamWriter swLogMarketSituMin = new StreamWriter(new FileStream(sMessageLogPath + "messageLogMarketSituMin.txt", FileMode.Create));
+        public StreamWriter swLogMarketSituSecKospi = new StreamWriter(new FileStream(sMessageLogPath + "messageLogMarketSituSecKospi.txt", FileMode.Create));
+        public StreamWriter swLogMarketSituSecKosdaq = new StreamWriter(new FileStream(sMessageLogPath + "messageLogMarketSituSecKosdaq.txt", FileMode.Create));
+        public StreamWriter swLogMarketSituMinKospi = new StreamWriter(new FileStream(sMessageLogPath + "messageLogMarketSituMinKospi.txt", FileMode.Create));
+        public StreamWriter swLogMarketSituMinKosdaq = new StreamWriter(new FileStream(sMessageLogPath + "messageLogMarketSituMinKosdaq.txt", FileMode.Create));
 
 
-        public const int REC_NUM = 8;
+        public const int REC_NUM = 18; // 0 시간 1 시가 2 종가 3 고가 4 저가 5 평균추세 6 근접추세 7 평균분산 8 근접분산 9 초근접추세 10 초근접분산 11 초기추세 12 기본각도 13 평균각도 14 근접각도 15 초근접각도 16 최대값각도 17 최저값각도
         public double[,] arrKospiIndex = new double[BRUSH + 390, REC_NUM];
         public double[,] arrKosdaqIndex = new double[BRUSH + 390, REC_NUM];
 
@@ -257,16 +259,38 @@ namespace MJTradier
 
         public int nRandomi = 50;
         public int nRecentArea = 30;
+        public int nRightArea = 10;
         public int nFlowIdx;
+        public int nRecentFlowIdx;
+        public int nRightFlowIdx;
         public int nFlowIdxDiff;
+        public int nRecentFlowIdxDiff;
+        public int nRightFlowIdxDiff;
         public double fInclination;
         public double fRecentInclination;
+        public double fRightInclination;
         public int nInclinationCnt;
         public int nRecentInclinationCnt;
+        public int nRightInclinationCnt;
         public double fFluctuation;
+        public double fRecentFluctuation;
+        public double fRightFluctuation;
+        public double fResultInitInclination;
+        public double fResultMaxInclination;
+        public double fResultMinInclination;
         public double fResultInclinationEvg;
         public double fResultRecentInclinationEvg;
+        public double fResultRightInclinationEvg;
         public double fY;
+        public double fRecentY;
+        public double fRightY;
+        
+        public double fKospiMaxFs;
+        public double fKospiMinFs;
+        
+        public double fKosdaqMaxFs;
+        public double fKosdaqMinFs;
+
         public Form1()
         {
 
@@ -350,7 +374,7 @@ namespace MJTradier
             nStockLength = kosdaqCodes.Length + kospiCodes.Length;
 
             eachStockIdxArray = new int[MAX_STOCK_NUM];
-            eachStockArray = new EachStock[nStockLength];
+            ea = new EachStock[nStockLength];
             buySlotArray = new BuySlot[nStockLength, BUY_SLOT_NUM]; // ex. [1600, 50]
             buySlotCntArray = new int[nStockLength]; // ex. [1600]
         }
@@ -509,15 +533,15 @@ namespace MJTradier
                 nEachStockIdx++;
                 /////////////////////////////////////
 
-                ////// eachStock 초기화 부분 //////////
+                ////// eachStock 초기화 부분 ////////// 
                 nCurIdx = eachStockIdxArray[codeIdx];
-                eachStockArray[nCurIdx].sRealScreenNum = sScreenNum;
-                eachStockArray[nCurIdx].sCode = codes[j];
-                eachStockArray[nCurIdx].nMarketGubun = marketGubun;
-                eachStockArray[nCurIdx].arrRecord = new double[BRUSH + 390, REC_NUM];
+                ea[nCurIdx].sRealScreenNum = sScreenNum;
+                ea[nCurIdx].sCode = codes[j];
+                ea[nCurIdx].nMarketGubun = marketGubun;
+                ea[nCurIdx].arrRecord = new double[BRUSH + 390, REC_NUM];
 
 
-                bool isEmpty = false; 
+                bool isEmpty = false;
                 try
                 {
                     sr = new StreamReader(sBasicInfoPath + codes[j] + ".txt");
@@ -525,30 +549,30 @@ namespace MJTradier
                     isEmpty = true;
                     sBasicInfoSplited = sEachBasicInfo.Split(',');
 
-                    eachStockArray[nCurIdx].sCodeName = sBasicInfoSplited[0];
-                    eachStockArray[nCurIdx].lShareOutstanding = long.Parse(sBasicInfoSplited[1]);
-                    eachStockArray[nCurIdx].fShareOutstandingRatio = double.Parse(sBasicInfoSplited[2]);
-                    eachStockArray[nCurIdx].f250TopCompare = double.Parse(sBasicInfoSplited[3]);
-                    eachStockArray[nCurIdx].f250BottomCompare = double.Parse(sBasicInfoSplited[4]);
-                    eachStockArray[nCurIdx].lTotalNumOfStock = long.Parse(sBasicInfoSplited[5]);
-                    eachStockArray[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(sBasicInfoSplited[6]));
+                    ea[nCurIdx].sCodeName = sBasicInfoSplited[0];
+                    ea[nCurIdx].lShareOutstanding = long.Parse(sBasicInfoSplited[1]);
+                    ea[nCurIdx].fShareOutstandingRatio = double.Parse(sBasicInfoSplited[2]);
+                    ea[nCurIdx].f250TopCompare = double.Parse(sBasicInfoSplited[3]);
+                    ea[nCurIdx].f250BottomCompare = double.Parse(sBasicInfoSplited[4]);
+                    ea[nCurIdx].lTotalNumOfStock = long.Parse(sBasicInfoSplited[5]);
+                    ea[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(sBasicInfoSplited[6]));
 
 
-                    if (eachStockArray[nCurIdx].nMarketGubun == KOSDAQ_ID)
+                    if (ea[nCurIdx].nMarketGubun == KOSDAQ_ID)
                     {
-                        fInitKosdaqIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
-                        fCurKosdaqIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                        fInitKosdaqIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                        fCurKosdaqIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
 
-                        fInitKosdaqIndexUnGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
-                        fCurKosdaqIndexUnGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                        fInitKosdaqIndexUnGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                        fCurKosdaqIndexUnGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
                     }
                     else
                     {
-                        fInitKospiIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
-                        fCurKospiIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                        fInitKospiIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                        fCurKospiIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
 
-                        fInitKospiIndexUnGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
-                        fCurKospiIndexUnGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                        fInitKospiIndexUnGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                        fCurKospiIndexUnGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
                     }
                     sr.Close();
                 }
@@ -563,7 +587,7 @@ namespace MJTradier
                 }
 
                 string sDate = DateTime.Now.ToString("yyyy-MM-dd"); //삭제예정
-                eachStockArray[nCurIdx].swLog = new StreamWriter(new FileStream(sMessageLogPath + sDate + "-" + eachStockArray[nCurIdx].sCode + "-" + eachStockArray[nCurIdx].sCodeName +".txt", FileMode.Create));
+                ea[nCurIdx].swLog = new StreamWriter(new FileStream(sMessageLogPath + sDate + "-" + ea[nCurIdx].sCode + "-" + ea[nCurIdx].sCodeName + ".txt", FileMode.Create));
                 //////////////////////////////////////
 
                 sCodeList += codes[j];
@@ -690,7 +714,7 @@ namespace MJTradier
                 int rows = axKHOpenAPI1.GetRepeatCnt(e.sTrCode, e.sRecordName);
                 nHoldingCnt += rows;
 
-                for ( int myMoneyIdx = 0; nCurHoldingsIdx < nHoldingCnt; nCurHoldingsIdx++, myMoneyIdx++)
+                for (int myMoneyIdx = 0; nCurHoldingsIdx < nHoldingCnt; nCurHoldingsIdx++, myMoneyIdx++)
                 {
                     holdingsArray[nCurHoldingsIdx].sCode = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, myMoneyIdx, "종목번호").Trim().Substring(1);
                     holdingsArray[nCurHoldingsIdx].sCodeName = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, myMoneyIdx, "종목명").Trim();
@@ -717,7 +741,7 @@ namespace MJTradier
                         }
                         else
                         {
-                            for ( int myStockIdx = 0; myStockIdx < nHoldingCnt; myStockIdx++)
+                            for (int myStockIdx = 0; myStockIdx < nHoldingCnt; myStockIdx++)
                             {
                                 testTextBox.AppendText((myStockIdx + 1).ToString() + " 종목번호 : " + holdingsArray[myStockIdx].sCode + ", 종목명 : " + holdingsArray[myStockIdx].sCodeName + ", 보유수량 : " + holdingsArray[myStockIdx].nHoldingQty.ToString() + ", 평가손익 : " + holdingsArray[myStockIdx].nTotalPL.ToString() + "\r\n"); //++
                             }
@@ -745,7 +769,7 @@ namespace MJTradier
                                 else
                                 {
                                     nCurIdx = eachStockIdxArray[int.Parse(holdingsArray[allSellIdx].sCode)];
-                                    eachStockArray[nCurIdx].nSellReqCnt++;
+                                    ea[nCurIdx].nSellReqCnt++;
                                     testTextBox.AppendText((allSellIdx + 1).ToString() + " " + holdingsArray[allSellIdx].sCode + " 매도신청 전송 성공 \r\n"); //++
                                 }
                                 Delay(300); // 1초에 5번 제한이지만 혹시 모르니 1초에 3번정도로 제한으로
@@ -785,58 +809,58 @@ namespace MJTradier
                 int nCodeIdx = int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "종목코드"));
                 nCurIdx = eachStockIdxArray[nCodeIdx];
 
-                eachStockArray[nCurIdx].sCodeName = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "종목명").Trim();
+                ea[nCurIdx].sCodeName = axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "종목명").Trim();
                 try
                 {
-                    eachStockArray[nCurIdx].lShareOutstanding = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통주식")) * 1000;
-                    eachStockArray[nCurIdx].fShareOutstandingRatio = double.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통비율"));
-                    eachStockArray[nCurIdx].lTotalNumOfStock = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "상장주식")) * 1000; ;
-                    eachStockArray[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가")));
+                    ea[nCurIdx].lShareOutstanding = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통주식")) * 1000;
+                    ea[nCurIdx].fShareOutstandingRatio = double.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "유통비율"));
+                    ea[nCurIdx].lTotalNumOfStock = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "상장주식")) * 1000; ;
+                    ea[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가")));
                 }
                 catch (Exception ex)
                 {
-                    eachStockArray[nCurIdx].lShareOutstanding = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "상장주식")) * 1000;
-                    eachStockArray[nCurIdx].fShareOutstandingRatio = 100.0;
-                    eachStockArray[nCurIdx].lTotalNumOfStock = eachStockArray[nCurIdx].lShareOutstanding;
-                    eachStockArray[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가")));
+                    ea[nCurIdx].lShareOutstanding = long.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "상장주식")) * 1000;
+                    ea[nCurIdx].fShareOutstandingRatio = 100.0;
+                    ea[nCurIdx].lTotalNumOfStock = ea[nCurIdx].lShareOutstanding;
+                    ea[nCurIdx].nYesterdayEndPrice = Math.Abs(int.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "현재가")));
                 }
                 try
                 {
-                    eachStockArray[nCurIdx].f250TopCompare = double.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "250최고가대비율"));
+                    ea[nCurIdx].f250TopCompare = double.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "250최고가대비율"));
                 }
                 catch (Exception ex)
                 {
-                    eachStockArray[nCurIdx].f250TopCompare = 0.0;
+                    ea[nCurIdx].f250TopCompare = 0.0;
                 }
 
                 try
                 {
-                    eachStockArray[nCurIdx].f250BottomCompare = double.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "250최저가대비율"));
+                    ea[nCurIdx].f250BottomCompare = double.Parse(axKHOpenAPI1.GetCommData(e.sTrCode, e.sRecordName, 0, "250최저가대비율"));
                 }
                 catch (Exception ex)
                 {
-                    eachStockArray[nCurIdx].f250BottomCompare = 0.0;
+                    ea[nCurIdx].f250BottomCompare = 0.0;
                 }
 
-                if (eachStockArray[nCurIdx].nMarketGubun == KOSDAQ_ID)
+                if (ea[nCurIdx].nMarketGubun == KOSDAQ_ID)
                 {
-                    fInitKosdaqIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
-                    fCurKosdaqIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                    fInitKosdaqIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                    fCurKosdaqIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
 
-                    fInitKosdaqIndexUnGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
-                    fCurKosdaqIndexUnGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                    fInitKosdaqIndexUnGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                    fCurKosdaqIndexUnGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
                 }
                 else
                 {
-                    fInitKospiIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
-                    fCurKospiIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                    fInitKospiIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                    fCurKospiIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
 
-                    fInitKospiIndexUnGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
-                    fCurKospiIndexUnGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                    fInitKospiIndexUnGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
+                    fCurKospiIndexUnGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nYesterdayEndPrice) / INDEX_DEGREE;
                 }
 
-                StreamWriter tmpSw = new StreamWriter(new FileStream(sBasicInfoPath + eachStockArray[nCurIdx].sCode + ".txt", FileMode.Create));
-                tmpSw.Write(eachStockArray[nCurIdx].sCodeName + "," + eachStockArray[nCurIdx].lShareOutstanding.ToString() + "," + eachStockArray[nCurIdx].fShareOutstandingRatio.ToString() + "," + eachStockArray[nCurIdx].f250TopCompare.ToString() + "," + eachStockArray[nCurIdx].f250BottomCompare.ToString() + "," + eachStockArray[nCurIdx].lTotalNumOfStock.ToString() + "," + eachStockArray[nCurIdx].nYesterdayEndPrice.ToString());
+                StreamWriter tmpSw = new StreamWriter(new FileStream(sBasicInfoPath + ea[nCurIdx].sCode + ".txt", FileMode.Create));
+                tmpSw.Write(ea[nCurIdx].sCodeName + "," + ea[nCurIdx].lShareOutstanding.ToString() + "," + ea[nCurIdx].fShareOutstandingRatio.ToString() + "," + ea[nCurIdx].f250TopCompare.ToString() + "," + ea[nCurIdx].f250BottomCompare.ToString() + "," + ea[nCurIdx].lTotalNumOfStock.ToString() + "," + ea[nCurIdx].nYesterdayEndPrice.ToString());
                 tmpSw.Close();
             }
 
@@ -875,7 +899,7 @@ namespace MJTradier
                         if (curSlot.nOrderType <= 2) // 신규매수매도 신규매수:1 신규매도:2
                         {
                             // 아직 매수중이거나 매도중일때는
-                            if ((eachStockArray[curSlot.nEachStockIdx].nBuyReqCnt > 0) || (eachStockArray[curSlot.nEachStockIdx].nSellReqCnt > 0)) // 현재 거래중이면
+                            if ((ea[curSlot.nEachStockIdx].nBuyReqCnt > 0) || (ea[curSlot.nEachStockIdx].nSellReqCnt > 0)) // 현재 거래중이면
                             {
                                 if (curSlot.nOrderType == 2) // 매도신청은 버려져서는 안됨.
                                     curSlot.nRqTime = nSharedTime; // 요청시간을 현재시간으로 설정
@@ -887,12 +911,12 @@ namespace MJTradier
                                 {
                                     int nEstimatedPrice = curSlot.nOrderPrice; // 종목의 요청했던 최우선매도호가를 받아온다.
                                                                                // 반복해서 가격을 n칸 올린다.
-                                    if (eachStockArray[curSlot.nEachStockIdx].nMarketGubun == KOSDAQ_ID) // 코스닥일 경우
+                                    if (ea[curSlot.nEachStockIdx].nMarketGubun == KOSDAQ_ID) // 코스닥일 경우
                                     {
                                         for (int eyeCloseIdx = 0; eyeCloseIdx < EYES_CLOSE_NUM; eyeCloseIdx++)
                                             nEstimatedPrice += GetKosdaqGap(nEstimatedPrice);
                                     }
-                                    else if (eachStockArray[curSlot.nEachStockIdx].nMarketGubun == KOSPI_ID) // 코스피의 경우
+                                    else if (ea[curSlot.nEachStockIdx].nMarketGubun == KOSPI_ID) // 코스피의 경우
                                     {
                                         for (int eyeCloseIdx = 0; eyeCloseIdx < EYES_CLOSE_NUM; eyeCloseIdx++)
                                             nEstimatedPrice += GetKospiGap(nEstimatedPrice);
@@ -907,18 +931,18 @@ namespace MJTradier
                                         nNumToBuy = nMaxNumToBuy; // 최대매수가능수로 세팅
 
                                     // 구매수량이 있고 현재종목의 최우선매도호가가 요청하려는 지정가보다 낮을 경우 구매요청을 걸 수 있다.
-                                    if ((nNumToBuy > 0) && (eachStockArray[curSlot.nEachStockIdx].nFs < nEstimatedPrice))
+                                    if ((nNumToBuy > 0) && (ea[curSlot.nEachStockIdx].nFs < nEstimatedPrice))
                                     {
                                         if (curSlot.sHogaGb.Equals("03")) // 시장가모드 : 시장가로 하면 키움에서 상한가값으로 계산해서 예수금만큼 살 수 가 없다
                                         {
                                             if (buySlotCntArray[curSlot.nEachStockIdx] < BUY_LIMIT_NUM) // 개인 구매횟수를 넘기지 않았다면
                                             {
-                                                eachStockArray[curSlot.nEachStockIdx].nCurLimitPrice = nEstimatedPrice; // 지정상한가 설정
-                                                eachStockArray[curSlot.nEachStockIdx].fTargetPercent = curSlot.fTargetPercent; // 익절퍼센트 설정
-                                                eachStockArray[curSlot.nEachStockIdx].fBottomPercent = curSlot.fBottomPercent; // 손절퍼센트 설정
-                                                eachStockArray[curSlot.nEachStockIdx].nCurRqTime = nSharedTime; // 현재시간설정
+                                                ea[curSlot.nEachStockIdx].nCurLimitPrice = nEstimatedPrice; // 지정상한가 설정
+                                                ea[curSlot.nEachStockIdx].fTargetPercent = curSlot.fTargetPercent; // 익절퍼센트 설정
+                                                ea[curSlot.nEachStockIdx].fBottomPercent = curSlot.fBottomPercent; // 손절퍼센트 설정
+                                                ea[curSlot.nEachStockIdx].nCurRqTime = nSharedTime; // 현재시간설정
 
-                                                testTextBox.AppendText(eachStockArray[curSlot.nEachStockIdx].nCurRqTime.ToString() + " : " + curSlot.sCode + " 매수신청 전송 \r\n"); //++
+                                                testTextBox.AppendText(ea[curSlot.nEachStockIdx].nCurRqTime.ToString() + " : " + curSlot.sCode + " 매수신청 전송 \r\n"); //++
                                                 int nBuyReqResult = axKHOpenAPI1.SendOrder(curSlot.sRQName, SetTradeScreenNo(), sAccountNum,
                                                     curSlot.nOrderType, curSlot.sCode, nNumToBuy, nEstimatedPrice,
                                                     "00", curSlot.sOrgOrderId); // 높은 매도호가에 지정가로 걸어 시장가처럼 사게 한다
@@ -927,7 +951,7 @@ namespace MJTradier
                                                 nCurOrderTime = nSharedTime;
                                                 if (nBuyReqResult == 0) // 요청이 성공하면
                                                 {
-                                                    eachStockArray[curSlot.nEachStockIdx].nBuyReqCnt++; // 구매횟수 증가
+                                                    ea[curSlot.nEachStockIdx].nBuyReqCnt++; // 구매횟수 증가
                                                     testTextBox.AppendText(curSlot.sCode + " 매수신청 전송 성공 \r\n"); //++
                                                 }
                                             }
@@ -940,7 +964,7 @@ namespace MJTradier
                                 {
                                     if (curSlot.sHogaGb.Equals("03")) // 시장가매도
                                     {
-                                        eachStockArray[curSlot.nEachStockIdx].nCurRqTime = nSharedTime; // 현재시간설정
+                                        ea[curSlot.nEachStockIdx].nCurRqTime = nSharedTime; // 현재시간설정
 
                                         testTextBox.AppendText(nSharedTime.ToString() + " : " + curSlot.sCode + " 매도신청 전송 \r\n"); //++
                                         int nSellReqResult = axKHOpenAPI1.SendOrder(curSlot.sRQName, SetTradeScreenNo(), sAccountNum,
@@ -958,7 +982,7 @@ namespace MJTradier
                                         else
                                         {
                                             testTextBox.AppendText(curSlot.sCode + " 매도신청 전송 성공 \r\n"); //++
-                                            eachStockArray[curSlot.nEachStockIdx].nSellReqCnt++; // 매도요청전송이 성공하면 매도횟수를 증가한다.
+                                            ea[curSlot.nEachStockIdx].nSellReqCnt++; // 매도요청전송이 성공하면 매도횟수를 증가한다.
                                         }
                                     }
                                 } // END ---- 신규매도
@@ -977,8 +1001,8 @@ namespace MJTradier
                             nCurOrderTime = nSharedTime;
                             if (nCancelReqResult != 0) // 매수취소가 성공하지 않으면
                             {
-                                eachStockArray[curSlot.nEachStockIdx].isCancelMode = false; // 해당종목의 현재 매수취소시그널을 false한다
-                                                                                            // 이래야지 매수취소를 다시 신청할 수 있다.
+                                ea[curSlot.nEachStockIdx].isCancelMode = false; // 해당종목의 현재 매수취소시그널을 false한다
+                                                                                // 이래야지 매수취소를 다시 신청할 수 있다.
                             }
                             else
                             {
@@ -1015,7 +1039,7 @@ namespace MJTradier
                 int nCodeIdx = int.Parse(sCode);
                 nCurIdx = eachStockIdxArray[nCodeIdx];
 
-                if (isMarketStart && !eachStockArray[nCurIdx].isExcluded)
+                if (isMarketStart && !ea[nCurIdx].isExcluded)
                 {
 
                     try
@@ -1023,21 +1047,21 @@ namespace MJTradier
                         int a = int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 64)); // 매도4호가잔량
                         int b = int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 74)); // 매수4호가잔량
 
-                        if ( a == 0 && b == 0 )
+                        if (a == 0 && b == 0)
                         {
-                            eachStockArray[nCurIdx].isViMode = true;
+                            ea[nCurIdx].isViMode = true;
                         }
                         else
                         {
-                            if (eachStockArray[nCurIdx].isViMode)
+                            if (ea[nCurIdx].isViMode)
                             {
-                                eachStockArray[nCurIdx].isViMode = false;
-                                eachStockArray[nCurIdx].nViTime = AddTimeBySec(nSharedTime, 20); // vi가 걸렸을때 가격변동이 있을 수 있으니 그때를 대비한 시간
+                                ea[nCurIdx].isViMode = false;
+                                ea[nCurIdx].nViTime = AddTimeBySec(nSharedTime, 20); // vi가 걸렸을때 가격변동이 있을 수 있으니 그때를 대비한 시간
                             }
 
                         }
 
-                       
+
                     }
 
                     catch (Exception ex)
@@ -1045,48 +1069,48 @@ namespace MJTradier
 
                     }
 
-                    if (!eachStockArray[nCurIdx].isViMode)
+                    if (!ea[nCurIdx].isViMode)
                     {
                         try
                         {
-                            eachStockArray[nCurIdx].nTotalBuyHogaVolume = Math.Abs(int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 125)));  // 매수호가총잔량
+                            ea[nCurIdx].nTotalBuyHogaVolume = Math.Abs(int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 125)));  // 매수호가총잔량
                         }
                         catch (Exception ex)
                         {
-                            eachStockArray[nCurIdx].nTotalBuyHogaVolume = 0;
+                            ea[nCurIdx].nTotalBuyHogaVolume = 0;
                         }
                         try
                         {
-                            eachStockArray[nCurIdx].nTotalSellHogaVolume = Math.Abs(int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 121)));  // 매도호가총잔량
+                            ea[nCurIdx].nTotalSellHogaVolume = Math.Abs(int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 121)));  // 매도호가총잔량
                         }
                         catch (Exception ex)
                         {
-                            eachStockArray[nCurIdx].nTotalSellHogaVolume = 0;
+                            ea[nCurIdx].nTotalSellHogaVolume = 0;
                         }
 
-                        eachStockArray[nCurIdx].nTotalHogaVolume = eachStockArray[nCurIdx].nTotalBuyHogaVolume + eachStockArray[nCurIdx].nTotalSellHogaVolume;
+                        ea[nCurIdx].nTotalHogaVolume = ea[nCurIdx].nTotalBuyHogaVolume + ea[nCurIdx].nTotalSellHogaVolume;
 
-                        if (eachStockArray[nCurIdx].nTotalHogaVolume > 0)
+                        if (ea[nCurIdx].nTotalHogaVolume > 0)
                         {
-                            eachStockArray[nCurIdx].fCurHogaRatio = (double)(eachStockArray[nCurIdx].nTotalSellHogaVolume - eachStockArray[nCurIdx].nTotalBuyHogaVolume) / eachStockArray[nCurIdx].nTotalHogaVolume;
+                            ea[nCurIdx].fCurHogaRatio = (double)(ea[nCurIdx].nTotalSellHogaVolume - ea[nCurIdx].nTotalBuyHogaVolume) / ea[nCurIdx].nTotalHogaVolume;
                         }
                         else
                         {
-                            eachStockArray[nCurIdx].fCurHogaRatio = 0.0;
+                            ea[nCurIdx].fCurHogaRatio = 0.0;
                         }
 
 
                         // 총호가량 벨 변수 작업
-                        if (eachStockArray[nCurIdx].fTotalHogaVolumeVal == 0)
-                            eachStockArray[nCurIdx].fTotalHogaVolumeVal = eachStockArray[nCurIdx].nTotalHogaVolume;
+                        if (ea[nCurIdx].fTotalHogaVolumeVal == 0)
+                            ea[nCurIdx].fTotalHogaVolumeVal = ea[nCurIdx].nTotalHogaVolume;
                         else
-                            eachStockArray[nCurIdx].fTotalHogaVolumeVal = eachStockArray[nCurIdx].nTotalHogaVolume * fPushWeight + eachStockArray[nCurIdx].fTotalHogaVolumeVal * (1 - fPushWeight);
+                            ea[nCurIdx].fTotalHogaVolumeVal = ea[nCurIdx].nTotalHogaVolume * fPushWeight + ea[nCurIdx].fTotalHogaVolumeVal * (1 - fPushWeight);
 
                         // 호가비율 벨 변수 작업
-                        if (eachStockArray[nCurIdx].fHogaRatioVal == 0 || double.IsNaN(eachStockArray[nCurIdx].fHogaRatioVal))
-                            eachStockArray[nCurIdx].fHogaRatioVal = eachStockArray[nCurIdx].fCurHogaRatio;
+                        if (ea[nCurIdx].fHogaRatioVal == 0 || double.IsNaN(ea[nCurIdx].fHogaRatioVal))
+                            ea[nCurIdx].fHogaRatioVal = ea[nCurIdx].fCurHogaRatio;
                         else
-                            eachStockArray[nCurIdx].fHogaRatioVal = eachStockArray[nCurIdx].fCurHogaRatio * fPushWeight + eachStockArray[nCurIdx].fHogaRatioVal * (1 - fPushWeight);
+                            ea[nCurIdx].fHogaRatioVal = ea[nCurIdx].fCurHogaRatio * fPushWeight + ea[nCurIdx].fHogaRatioVal * (1 - fPushWeight);
 
                     }
                 }
@@ -1104,7 +1128,7 @@ namespace MJTradier
                     nTenTime = AddTimeBySec(nFirstTime, 3600);
                 }
 
-                if (isMarketStart && !eachStockArray[nCurIdx].isExcluded) // 장이 시작 안했으면 접근 금지
+                if (isMarketStart && !ea[nCurIdx].isExcluded) // 장이 시작 안했으면 접근 금지
                 {
 
 
@@ -1127,53 +1151,53 @@ namespace MJTradier
 
                     try
                     {
-                        eachStockArray[nCurIdx].nFs = Math.Abs(int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 27))); // 최우선매도호가
-                        eachStockArray[nCurIdx].nFb = Math.Abs(int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 28))); // 최우선매수호가
-                        eachStockArray[nCurIdx].nTv = int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 15)); // 거래량
-                        eachStockArray[nCurIdx].fTs = double.Parse(axKHOpenAPI1.GetCommRealData(sCode, 228)); // 체결강도
-                        eachStockArray[nCurIdx].fPower = double.Parse(axKHOpenAPI1.GetCommRealData(sCode, 12)) / 100; // 등락율
+                        ea[nCurIdx].nFs = Math.Abs(int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 27))); // 최우선매도호가
+                        ea[nCurIdx].nFb = Math.Abs(int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 28))); // 최우선매수호가
+                        ea[nCurIdx].nTv = int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 15)); // 거래량
+                        ea[nCurIdx].fTs = double.Parse(axKHOpenAPI1.GetCommRealData(sCode, 228)); // 체결강도
+                        ea[nCurIdx].fPower = double.Parse(axKHOpenAPI1.GetCommRealData(sCode, 12)) / 100; // 등락율
                     }
                     catch (Exception ex)
                     {
                         return;
                     }
 
-                    eachStockArray[nCurIdx].nCnt++; // 인덱스를 올린다.
+                    ea[nCurIdx].nCnt++; // 인덱스를 올린다.
 
-                    if (eachStockArray[nCurIdx].nFs == 0 && eachStockArray[nCurIdx].nFb == 0)  // 둘 다 데이터가 없는경우는 가격초기화가 불가능하기 return
+                    if (ea[nCurIdx].nFs == 0 && ea[nCurIdx].nFb == 0)  // 둘 다 데이터가 없는경우는 가격초기화가 불가능하기 return
                         return;
                     else
                     {
                         // 둘다 제대로 받아졌거나 , 둘 중 하나가 안받아졌거나
-                        if (eachStockArray[nCurIdx].nFs == 0) // fs가 안받아졌으면 fb 가격에 fb갭 한칸을 더해서 설정
+                        if (ea[nCurIdx].nFs == 0) // fs가 안받아졌으면 fb 가격에 fb갭 한칸을 더해서 설정
                         {
                             int gap = 0;
-                            if (eachStockArray[nCurIdx].nMarketGubun == KOSDAQ_ID)
-                                gap = GetKosdaqGap(eachStockArray[nCurIdx].nFb);
-                            else if (eachStockArray[nCurIdx].nMarketGubun == KOSPI_ID)
-                                gap = GetKospiGap(eachStockArray[nCurIdx].nFb);
+                            if (ea[nCurIdx].nMarketGubun == KOSDAQ_ID)
+                                gap = GetKosdaqGap(ea[nCurIdx].nFb);
+                            else if (ea[nCurIdx].nMarketGubun == KOSPI_ID)
+                                gap = GetKospiGap(ea[nCurIdx].nFb);
 
-                            eachStockArray[nCurIdx].nFs = eachStockArray[nCurIdx].nFb + gap;
+                            ea[nCurIdx].nFs = ea[nCurIdx].nFb + gap;
                         }
-                        if (eachStockArray[nCurIdx].nFb == 0) // fb가 안받아졌으면 fs 가격에 (fs-1)갭 한칸을 마이너스해서 설정
+                        if (ea[nCurIdx].nFb == 0) // fb가 안받아졌으면 fs 가격에 (fs-1)갭 한칸을 마이너스해서 설정
                         {
                             // fs-1 인 이유는 fs가 1000원이라하면 fb는 999여야하는데 갭을 받을때 5를 받게되니 fb가 995가 되어버린다.이는 오류!
                             int gap = 0;
-                            if (eachStockArray[nCurIdx].nMarketGubun == KOSDAQ_ID)
-                                gap = GetKosdaqGap(eachStockArray[nCurIdx].nFs - 1);
-                            else if (eachStockArray[nCurIdx].nMarketGubun == KOSPI_ID)
-                                gap = GetKospiGap(eachStockArray[nCurIdx].nFs - 1);
+                            if (ea[nCurIdx].nMarketGubun == KOSDAQ_ID)
+                                gap = GetKosdaqGap(ea[nCurIdx].nFs - 1);
+                            else if (ea[nCurIdx].nMarketGubun == KOSPI_ID)
+                                gap = GetKospiGap(ea[nCurIdx].nFs - 1);
 
-                            eachStockArray[nCurIdx].nFb = eachStockArray[nCurIdx].nFs - gap;
+                            ea[nCurIdx].nFb = ea[nCurIdx].nFs - gap;
                         }
 
                     }
-                    eachStockArray[nCurIdx].nDiff = eachStockArray[nCurIdx].nFs - eachStockArray[nCurIdx].nFb;
+                    ea[nCurIdx].nDiff = ea[nCurIdx].nFs - ea[nCurIdx].nFb;
 
                     // 이상 데이터 감지
                     // fs와 fb의 가격차이가 2퍼가 넘을경우 이상데이터라 생각하고 리턴한다.
                     // 미리 리턴하는 이유는 이런 이상 데이터로는 전략에 사용하지 않기위해서 전략찾는 부분 위에서 리턴여부를 검증한다.
-                    // if ((eachStockArray[nCurIdx].nFs - eachStockArray[nCurIdx].nFb) / eachStockArray[nCurIdx].nFb > 0.02)
+                    // if ((ea[nCurIdx].nFs - ea[nCurIdx].nFb) / ea[nCurIdx].nFb > 0.02)
                     //    return;
 
 
@@ -1181,62 +1205,62 @@ namespace MJTradier
 
 
                     // 처음가격과 시간등을 맞추려는 변수이다.
-                    if (!eachStockArray[nCurIdx].isFirstCheck) // 개인 초기작업
+                    if (!ea[nCurIdx].isFirstCheck) // 개인 초기작업
                     {
 
-                        //if (eachStockArray[nCurIdx].nFs < 1000) // 1000원도 안한다면 폐기처분
+                        //if (ea[nCurIdx].nFs < 1000) // 1000원도 안한다면 폐기처분
                         //{
-                        //    axKHOpenAPI1.SetRealRemove(eachStockArray[nCurIdx].sRealScreenNum, eachStockArray[nCurIdx].sCode);
-                        //    eachStockArray[nCurIdx].isExcluded = true;
+                        //    axKHOpenAPI1.SetRealRemove(ea[nCurIdx].sRealScreenNum, ea[nCurIdx].sCode);
+                        //    ea[nCurIdx].isExcluded = true;
                         //}
 
-                        eachStockArray[nCurIdx].isFirstCheck = true; // 가격설정이 끝났으면 이종목의 초기체크는 완료 설정
+                        ea[nCurIdx].isFirstCheck = true; // 가격설정이 끝났으면 이종목의 초기체크는 완료 설정
                         int nStartGap = int.Parse(axKHOpenAPI1.GetCommRealData(sCode, 11)); // 어제종가와 비교한 가격변화
 
-                        eachStockArray[nCurIdx].nStartGap = nStartGap; // 갭
+                        ea[nCurIdx].nStartGap = nStartGap; // 갭
 
-                        if (eachStockArray[nCurIdx].nYesterdayEndPrice == 0)
+                        if (ea[nCurIdx].nYesterdayEndPrice == 0)
                         {
-                            eachStockArray[nCurIdx].nYesterdayEndPrice = eachStockArray[nCurIdx].nFs - nStartGap; // 시초가에서 변화를 제거하면 어제 종가가 나옴
-                            eachStockArray[nCurIdx].nTodayStartPrice = eachStockArray[nCurIdx].nFs; // 오늘 시초가
+                            ea[nCurIdx].nYesterdayEndPrice = ea[nCurIdx].nFs - nStartGap; // 시초가에서 변화를 제거하면 어제 종가가 나옴
+                            ea[nCurIdx].nTodayStartPrice = ea[nCurIdx].nFs; // 오늘 시초가
                         }
                         else
                         {
-                            eachStockArray[nCurIdx].nTodayStartPrice = eachStockArray[nCurIdx].nYesterdayEndPrice + eachStockArray[nCurIdx].nStartGap;
+                            ea[nCurIdx].nTodayStartPrice = ea[nCurIdx].nYesterdayEndPrice + ea[nCurIdx].nStartGap;
                         }
-                        eachStockArray[nCurIdx].fStartGap = (double)eachStockArray[nCurIdx].nStartGap / eachStockArray[nCurIdx].nYesterdayEndPrice; // 갭의 등락율
-                        eachStockArray[nCurIdx].lPrevTotalPriceOfStock = eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nFs;
+                        ea[nCurIdx].fStartGap = (double)ea[nCurIdx].nStartGap / ea[nCurIdx].nYesterdayEndPrice; // 갭의 등락율
+                        ea[nCurIdx].lPrevTotalPriceOfStock = ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nFs;
 
-                        if (eachStockArray[nCurIdx].nMarketGubun == KOSDAQ_ID)
+                        if (ea[nCurIdx].nMarketGubun == KOSDAQ_ID)
                         {
 
-                            fCurKosdaqIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nStartGap) / INDEX_DEGREE; //GAP있는 부분만 갭 영향을 주겠다.
-                            fKosdaqGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nStartGap) / INDEX_DEGREE;
+                            fCurKosdaqIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nStartGap) / INDEX_DEGREE; //GAP있는 부분만 갭 영향을 주겠다.
+                            fKosdaqGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nStartGap) / INDEX_DEGREE;
                         }
                         else
                         {
 
-                            fCurKospiIndexGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nStartGap) / INDEX_DEGREE;
-                            fKospiGap += (double)(eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nStartGap) / INDEX_DEGREE;
+                            fCurKospiIndexGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nStartGap) / INDEX_DEGREE;
+                            fKospiGap += (double)(ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nStartGap) / INDEX_DEGREE;
                         }
 
 
-                        if (eachStockArray[nCurIdx].fStartGap > 0.02)
+                        if (ea[nCurIdx].fStartGap > 0.02)
                         {
                             swGapUp = new StreamWriter(new FileStream(sMessageLogPath + "GapUp.txt", FileMode.Append));
-                            swGapUp.WriteLine(eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + eachStockArray[nCurIdx].fStartGap.ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString());
+                            swGapUp.WriteLine(ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + ea[nCurIdx].fStartGap.ToString() + "\t" + ea[nCurIdx].nFs.ToString());
                             swGapUp.Close();
                         }
-                        else if (eachStockArray[nCurIdx].fStartGap < -0.02)
+                        else if (ea[nCurIdx].fStartGap < -0.02)
                         {
                             swGapDown = new StreamWriter(new FileStream(sMessageLogPath + "GapDown.txt", FileMode.Append));
-                            swGapDown.WriteLine(eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + eachStockArray[nCurIdx].fStartGap.ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString());
+                            swGapDown.WriteLine(ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + ea[nCurIdx].fStartGap.ToString() + "\t" + ea[nCurIdx].nFs.ToString());
                             swGapDown.Close();
                         }
                         else
                         {
                             swGapMiddle = new StreamWriter(new FileStream(sMessageLogPath + "GapMiddle.txt", FileMode.Append));
-                            swGapMiddle.WriteLine(eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + eachStockArray[nCurIdx].fStartGap.ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString());
+                            swGapMiddle.WriteLine(ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + ea[nCurIdx].fStartGap.ToString() + "\t" + ea[nCurIdx].nFs.ToString());
                             swGapMiddle.Close();
                         }
 
@@ -1247,10 +1271,10 @@ namespace MJTradier
                     /// 코스피 코스닥 지수 기록
                     /// 코스피
                     int nKospiIndexMinPointer = (int)(SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60) + BRUSH; // 현재시간과 9시를 뺀 결과를 분단위로 받음
-                    if (nKospiIndexIdxPointer != nKospiIndexMinPointer && fInitKospiIndexUnGap != 0) // 기록된 포인터와 새로운 포인터가 다르면 (과거처리)
+                    if (nKospiIndexIdxPointer != nKospiIndexMinPointer)// && fInitKospiIndexUnGap != 0) // 기록된 포인터와 새로운 포인터가 다르면 (과거처리)
                     {
                         int nDiff = nKospiIndexMinPointer - nKospiIndexIdxPointer;
-
+                        double maxPart, minPart;
                         for (int nKospiIter = 0; nKospiIter < nDiff; nKospiIter++)
                         {
                             if (nKospiIndexIdxPointer < BRUSH)
@@ -1264,6 +1288,7 @@ namespace MJTradier
                             else
                             {
                                 arrKospiIndex[nKospiIndexIdxPointer, 0] = AddTimeBySec(nFirstTime, (nKospiIndexIdxPointer - BRUSH) * 60);
+
                                 if (fKospiIndexEnd == 0) // 서킷브레이커 대비
                                 {
                                     arrKospiIndex[nKospiIndexIdxPointer, 1] = fKospiIndexFollow;
@@ -1280,169 +1305,147 @@ namespace MJTradier
                                 }
                             }
 
+                            if (arrKospiIndex[nKospiIndexIdxPointer, 1] < arrKospiIndex[nKospiIndexIdxPointer, 2])
+                            {
+                                maxPart = arrKospiIndex[nKospiIndexIdxPointer, 2];
+                                minPart = arrKospiIndex[nKospiIndexIdxPointer, 1];
+                            }
+                            else
+                            {
+                                maxPart = arrKospiIndex[nKospiIndexIdxPointer, 1];
+                                minPart = arrKospiIndex[nKospiIndexIdxPointer, 2];
+                            }
+
+
+                            if (fKospiMaxFs == 0 || fKospiMaxFs < maxPart)
+                            {
+                                fKospiMaxFs = maxPart;
+                            }
+                            if(fKospiMinFs == 0 || fKospiMinFs > minPart)
+                            {
+                                fKospiMinFs = minPart;
+                            }
+
                             fKospiIndexFirst = 0;
                             fKospiIndexEnd = 0;
                             fKospiIndexMax = 0;
                             fKospiIndexMin = 0;
+
                             nKospiIndexIdxPointer++;
-                            if (nKospiIndexIdxPointer > 200)
+
+
+                        } // END -- for
+
+
+                        if (nKospiIndexIdxPointer > BRUSH) // 추세 확인
+                        {
+
+
+                            fInclination = 0;
+                            fRecentInclination = 0;
+                            fRightInclination = 0;
+                            nInclinationCnt = 0;
+                            nRecentInclinationCnt = 0;
+                            nRightInclinationCnt = 0;
+                            fFluctuation = 0;
+                            fRecentFluctuation = 0;
+                            fRightFluctuation = 0;
+                            int nMarketGap = (int)(fInitKospiIndexUnGap / 1000);
+
+
+
+
+                            //  추세 구하기
+                            for (int j = 0; j < nRandomi; j++)
                             {
-                                int c = 3;
-                            }
-                            if (nKospiIndexIdxPointer > BRUSH) // 추세 확인
-                            {
+                                nFlowIdx = rand.Next(nKospiIndexIdxPointer);
+                                fInclination += (fCurKospiIndexUnGap - arrKospiIndex[nFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nFlowIdx, 0]) / 60);
+                                nInclinationCnt++;
 
-                                fInclination = 0;
-                                fRecentInclination = 0;
-                                nInclinationCnt = 0;
-                                nRecentInclinationCnt = 0;
-                                fFluctuation = 0;
 
-                                for (int j = 0; j < nRandomi; j++)
+                                if (nKospiIndexIdxPointer >= nRecentArea)
                                 {
-                                    nFlowIdx = rand.Next(nKospiIndexIdxPointer);
-                                    fInclination += (fCurKospiIndexUnGap - arrKospiIndex[nFlowIdx, 2]) / (SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nFlowIdx, 0]) / 60);
-                                    nInclinationCnt++;
-
-                                    if (double.IsInfinity(fInclination))
-                                    {
-                                        int b = 3;
-                                    }
-
-                                }
-                                fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
-
-                                for (int k = 0; k < nRandomi; k++)
-                                {
-                                    if (nKospiIndexIdxPointer >= nRecentArea)
-                                    {
-                                        nFlowIdx = rand.Next(nKospiIndexIdxPointer - nRecentArea, nKospiIndexIdxPointer);
-                                    }
-                                    else
-                                        nFlowIdx = rand.Next(nKospiIndexIdxPointer);
-                                    nRecentInclinationCnt++;
-                                    fRecentInclination += (fCurKospiIndexUnGap - arrKospiIndex[nFlowIdx, 2]) / (SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nFlowIdx, 0]) / 60);
-                                    nFlowIdxDiff = rand.Next(nKospiIndexIdxPointer);
-
-                                    fY = fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nFlowIdx, 0]) / 60) + fCurKospiIndexUnGap - fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
-
-                                    fFluctuation += Math.Pow(fY - arrKospiIndex[nFlowIdx, 2], 2); // 변동폭
-                                }
-                                fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
-
-                                arrKospiIndex[nKospiIndexIdxPointer, 5] = fResultInclinationEvg;
-                                arrKospiIndex[nKospiIndexIdxPointer, 6] = fResultRecentInclinationEvg;
-                                arrKospiIndex[nKospiIndexIdxPointer, 7] = Math.Sqrt(fFluctuation) * 100 / fInitKospiIndexUnGap;
-
-
-                                double fN = (fResultInclinationEvg * 100) / fInitKospiIndexUnGap;
-                                double fM = (fResultRecentInclinationEvg * 100) / fInitKospiIndexUnGap;
-                                int nNDown = 0;
-                                int nNUp = 0;
-
-
-                                while (Math.Abs(fN) > 10)
-                                {
-                                    nNDown++;
-                                    fN /= 10;
-                                }
-
-                                while (fN != 0 && Math.Abs(fN) < 0.1)
-                                {
-                                    nNUp++;
-                                    fN *= 10;
-                                }
-
-                                for (int j = 0; j < nNDown; j++)
-                                {
-                                    fM /= 10;
-                                }
-                                for (int k = 0; k < nNUp; k++)
-                                {
-                                    fM *= 10;
-                                }
-
-                                if (fN == 0)
-                                {
-                                    fKospiZeroBasedAngleDirection = 0;
+                                    nRecentFlowIdx = rand.Next(nKospiIndexIdxPointer - nRecentArea, nKospiIndexIdxPointer);
                                 }
                                 else
-                                {
-                                    fKospiZeroBasedAngleDirection = Math.Atan(fN) * (180 / Math.PI);
-                                }
-                                
+                                    nRecentFlowIdx = rand.Next(nKospiIndexIdxPointer);
+                                fRecentInclination += (fCurKospiIndexUnGap - arrKospiIndex[nRecentFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nRecentFlowIdx, 0]) / 60);
+                                nRecentInclinationCnt++;
 
-                                if (fN == fM) // same
+                                if (nKospiIndexIdxPointer >= nRightArea)
                                 {
-                                    fKospiAngleDirection = 0;
-                                }
-                                else if (fN * fM == -1) // -1
-                                {
-                                    if (fN > 0)
-                                    {
-                                        fKospiAngleDirection = -90;
-                                    }
-                                    else
-                                    {
-                                        fKospiAngleDirection = 90;
-                                    }
+                                    nRightFlowIdx = rand.Next(nKospiIndexIdxPointer - nRightArea, nKospiIndexIdxPointer);
                                 }
                                 else
-                                {
-                                    // 각도가 반시계 방향이면 + 
-                                    //        시계방향이면 -
-                                    if (fN < fM)
-                                    {
-
-                                        if (fN * fM < 0)
-                                        {
-                                            if (fN * fM < -1)
-                                            {
-                                                fKospiAngleDirection = 180 + Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-                                            else
-                                            {
-                                                fKospiAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
+                                    nRightFlowIdx = rand.Next(nKospiIndexIdxPointer);
+                                fRightInclination += (fCurKospiIndexUnGap - arrKospiIndex[nRightFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nRightFlowIdx, 0]) / 60);
+                                nRightInclinationCnt++;
 
 
-                                        }
-                                        else
-                                        {
-                                            fKospiAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        if (fN * fM < 0)
-                                        {
-                                            if (fN * fM < -1)
-                                            {
-                                                fKospiAngleDirection = - 180 + Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-                                            else
-                                            {
-                                                fKospiAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-
-                                        }
-                                        else
-                                        {
-                                            fKospiAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                        }
-
-                                    }
-                                }
                             }
+
+                            fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
+                            fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
+                            fResultRightInclinationEvg = fRightInclination / nRightInclinationCnt;
+                            fResultInitInclination = (fCurKospiIndexUnGap - fInitKospiIndexUnGap) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+                            fResultMaxInclination = (fCurKospiIndexUnGap - fKospiMaxFs) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+                            fResultMinInclination = (fCurKospiIndexUnGap - fKospiMinFs) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+
+                            // 분산 구하기
+                            for (int k = 0; k < nRandomi; k++)
+                            {
+                                nFlowIdxDiff = rand.Next(nKospiIndexIdxPointer);
+                                fY = fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nFlowIdxDiff, 0]) / 60) + fCurKospiIndexUnGap - fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fFluctuation += Math.Pow((fY - arrKospiIndex[nFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+
+
+                                if (nKospiIndexIdxPointer >= nRecentArea)
+                                {
+                                    nRecentFlowIdxDiff = rand.Next(nKospiIndexIdxPointer - nRecentArea, nKospiIndexIdxPointer);
+                                }
+                                else
+                                    nRecentFlowIdxDiff = rand.Next(nKospiIndexIdxPointer);
+                                fRecentY = fResultRecentInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nRecentFlowIdxDiff, 0]) / 60) + fCurKospiIndexUnGap - fResultRecentInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fRecentFluctuation += Math.Pow((fRecentY - arrKospiIndex[nRecentFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+
+                                if (nKospiIndexIdxPointer >= nRightArea)
+                                {
+                                    nRightFlowIdxDiff = rand.Next(nKospiIndexIdxPointer - nRightArea, nKospiIndexIdxPointer);
+                                }
+                                else
+                                    nRightFlowIdxDiff = rand.Next(nKospiIndexIdxPointer);
+                                fRightY = fResultRightInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)arrKospiIndex[nRightFlowIdxDiff, 0]) / 60) + fCurKospiIndexUnGap - fResultRightInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fRightFluctuation += Math.Pow((fRightY - arrKospiIndex[nRightFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+                            }
+
+                            arrKospiIndex[nKospiIndexIdxPointer, 5] = fResultInclinationEvg / nMarketGap;  // 평균추세
+                            arrKospiIndex[nKospiIndexIdxPointer, 6] = fResultRecentInclinationEvg / nMarketGap; // 근접추세
+                            arrKospiIndex[nKospiIndexIdxPointer, 7] = Math.Sqrt(fFluctuation); // 평균분산
+                            arrKospiIndex[nKospiIndexIdxPointer, 8] = Math.Sqrt(fRecentFluctuation); // 근접분산
+                            arrKospiIndex[nKospiIndexIdxPointer, 9] = fResultRightInclinationEvg / nMarketGap; // 초근접추세
+                            arrKospiIndex[nKospiIndexIdxPointer, 10] = Math.Sqrt(fRightFluctuation); // 초근접분산
+                            arrKospiIndex[nKospiIndexIdxPointer, 11] = fResultInitInclination / nMarketGap; // 초기추세
+                            arrKospiIndex[nKospiIndexIdxPointer, 12] = GetAngleBetween(0, arrKospiIndex[nKospiIndexIdxPointer, 11]); // 초기각도
+                            arrKospiIndex[nKospiIndexIdxPointer, 13] = GetAngleBetween(0, arrKospiIndex[nKospiIndexIdxPointer, 5]);  // 평균각도
+                            arrKospiIndex[nKospiIndexIdxPointer, 14] = GetAngleBetween(0, arrKospiIndex[nKospiIndexIdxPointer, 6]);  // 근접각도
+                            arrKospiIndex[nKospiIndexIdxPointer, 15] = GetAngleBetween(0, arrKospiIndex[nKospiIndexIdxPointer, 9]);  // 초근접각도
+                            arrKospiIndex[nKospiIndexIdxPointer, 16] = GetAngleBetween(0, fResultMaxInclination / nMarketGap); // 최대값각도
+                            arrKospiIndex[nKospiIndexIdxPointer, 17] = GetAngleBetween(0, fResultMinInclination / nMarketGap); // 최소값각도
+
                         }
                     }
 
+
+
                     /// 코스닥
                     int nKosdaqIndexMinPointer = (int)(SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60) + BRUSH; // 현재시간과 9시를 뺀 결과를 분단위로 받음
-                    if (nKosdaqIndexIdxPointer != nKosdaqIndexMinPointer && fInitKosdaqIndexUnGap != 0) // 기록된 포인터와 새로운 포인터가 다르면 (과거처리)
+                    if (nKosdaqIndexIdxPointer != nKosdaqIndexMinPointer ) //`&& fInitKosdaqIndexUnGap != 0) // 기록된 포인터와 새로운 포인터가 다르면 (과거처리)
                     {
                         int nDiff = nKosdaqIndexMinPointer - nKosdaqIndexIdxPointer;
+                        double maxPart, minPart;
 
                         for (int kosdaqIterIdx = 0; kosdaqIterIdx < nDiff; kosdaqIterIdx++)
                         {
@@ -1459,10 +1462,10 @@ namespace MJTradier
                                 arrKosdaqIndex[nKosdaqIndexIdxPointer, 0] = AddTimeBySec(nFirstTime, (nKosdaqIndexIdxPointer - BRUSH) * 60);
                                 if (fKosdaqIndexEnd == 0) // 서킷브레이커 대비
                                 {
-                                    arrKosdaqIndex[nKosdaqIndexIdxPointer, 1] = fKospiIndexFollow;
-                                    arrKosdaqIndex[nKosdaqIndexIdxPointer, 2] = fKospiIndexFollow;
-                                    arrKosdaqIndex[nKosdaqIndexIdxPointer, 3] = fKospiIndexFollow;
-                                    arrKosdaqIndex[nKosdaqIndexIdxPointer, 4] = fKospiIndexFollow;
+                                    arrKosdaqIndex[nKosdaqIndexIdxPointer, 1] = fKosdaqIndexFollow;
+                                    arrKosdaqIndex[nKosdaqIndexIdxPointer, 2] = fKosdaqIndexFollow;
+                                    arrKosdaqIndex[nKosdaqIndexIdxPointer, 3] = fKosdaqIndexFollow;
+                                    arrKosdaqIndex[nKosdaqIndexIdxPointer, 4] = fKosdaqIndexFollow;
                                 }
                                 else
                                 {
@@ -1471,166 +1474,138 @@ namespace MJTradier
                                     arrKosdaqIndex[nKosdaqIndexIdxPointer, 3] = fKosdaqIndexMax;
                                     arrKosdaqIndex[nKosdaqIndexIdxPointer, 4] = fKosdaqIndexMin;
                                 }
-                                
+
                             }
+
+                            if (arrKosdaqIndex[nKosdaqIndexIdxPointer, 1] < arrKosdaqIndex[nKosdaqIndexIdxPointer, 2])
+                            {
+                                maxPart = arrKosdaqIndex[nKosdaqIndexIdxPointer, 2];
+                                minPart = arrKosdaqIndex[nKosdaqIndexIdxPointer, 1];
+                            }
+                            else
+                            {
+                                maxPart = arrKosdaqIndex[nKosdaqIndexIdxPointer, 1];
+                                minPart = arrKosdaqIndex[nKosdaqIndexIdxPointer, 2];
+                            }
+
+
+                            if (fKosdaqMaxFs == 0 || fKosdaqMaxFs < maxPart)
+                            {
+                                fKosdaqMaxFs = maxPart;
+                            }
+                            if (fKosdaqMinFs == 0 || fKosdaqMinFs > minPart)
+                            {
+                                fKosdaqMinFs = minPart;
+                            }
+
                             fKosdaqIndexFirst = 0;
                             fKosdaqIndexEnd = 0;
                             fKosdaqIndexMax = 0;
                             fKosdaqIndexMin = 0;
                             nKosdaqIndexIdxPointer++;
-                            if (nKosdaqIndexIdxPointer > 200)
+
+                        } // END --- for
+
+                        if (nKosdaqIndexIdxPointer > BRUSH) // 추세 확인
+                        {
+
+
+                            fInclination = 0;
+                            fRecentInclination = 0;
+                            fRightInclination = 0;
+                            nInclinationCnt = 0;
+                            nRecentInclinationCnt = 0;
+                            nRightInclinationCnt = 0;
+                            fFluctuation = 0;
+                            fRecentFluctuation = 0;
+                            fRightFluctuation = 0;
+                            int nMarketGap = (int)(fInitKosdaqIndexUnGap / 1000);
+
+
+
+
+                            //  추세 구하기
+                            for (int j = 0; j < nRandomi; j++)
                             {
-                                int c = 3;
-                            }
+                                nFlowIdx = rand.Next(nKosdaqIndexIdxPointer);
+                                fInclination += (fInitKosdaqIndexUnGap - arrKosdaqIndex[nFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nFlowIdx, 0]) / 60);
+                                nInclinationCnt++;
 
-                            if (nKosdaqIndexIdxPointer > BRUSH) // 추세 확인
-                            {
 
-                                fInclination = 0;
-                                fRecentInclination = 0;
-                                nInclinationCnt = 0;
-                                nRecentInclinationCnt = 0;
-                                fFluctuation = 0;
-
-                                for (int j = 0; j < nRandomi; j++)
+                                if (nKosdaqIndexIdxPointer >= nRecentArea)
                                 {
-                                    nFlowIdx = rand.Next(nKosdaqIndexIdxPointer);
-                                    fInclination += (fCurKosdaqIndexUnGap - arrKosdaqIndex[nFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nFlowIdx, 0]) / 60);
-                                    nInclinationCnt++;
-
-                                    if (double.IsInfinity(fInclination))
-                                    {
-                                        int b = 3;
-                                    }
-                                }
-                                fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
-
-                                for (int k = 0; k < nRandomi; k++)
-                                {
-                                    if (nKosdaqIndexIdxPointer >= nRecentArea)
-                                    {
-                                        nFlowIdx = rand.Next(nKosdaqIndexIdxPointer - nRecentArea, nKosdaqIndexIdxPointer);
-                                    }
-                                    else
-                                        nFlowIdx = rand.Next(nKosdaqIndexIdxPointer);
-                                    nRecentInclinationCnt++;
-                                    fRecentInclination += (fCurKosdaqIndexUnGap - arrKosdaqIndex[nFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nFlowIdx, 0]) / 60);;
-                                    nFlowIdxDiff = rand.Next(nKosdaqIndexIdxPointer);
-
-                                    fY = fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nFlowIdx, 0]) / 60) + fCurKosdaqIndexUnGap - fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
-                                    fFluctuation += Math.Pow(fY - arrKosdaqIndex[nFlowIdx, 2], 2); // 변동폭
-                                }
-                                fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
-
-                                arrKosdaqIndex[nKosdaqIndexIdxPointer, 5] = fResultInclinationEvg ;
-                                arrKosdaqIndex[nKosdaqIndexIdxPointer, 6] = fResultRecentInclinationEvg;
-                                arrKosdaqIndex[nKosdaqIndexIdxPointer, 7] = Math.Sqrt(fFluctuation) * 100 / fInitKosdaqIndexUnGap;
-
-
-                                double fN = (fResultInclinationEvg * 100 ) / fInitKosdaqIndexUnGap;
-                                double fM = (fResultRecentInclinationEvg * 100) / fInitKosdaqIndexUnGap;
-                                int nNDown = 0;
-                                int nNUp = 0;
-
-
-
-                                while (Math.Abs(fN) > 10)
-                                {
-                                    nNDown++;
-                                    fN /= 10;
-                                }
-
-                                while (fN != 0 && Math.Abs(fN) < 0.1)
-                                {
-                                    nNUp++;
-                                    fN *= 10;
-                                }
-
-                                for (int j = 0; j < nNDown; j++)
-                                {
-                                    fM /= 10;
-                                }
-                                for (int k = 0; k < nNUp; k++)
-                                {
-                                    fM *= 10;
-                                }
-
-                                if (fN == 0)
-                                {
-                                    fKosdaqZeroBasedAngleDirection = 0;
+                                    nRecentFlowIdx = rand.Next(nKosdaqIndexIdxPointer - nRecentArea, nKosdaqIndexIdxPointer);
                                 }
                                 else
-                                {
-                                    fKosdaqZeroBasedAngleDirection = Math.Atan(fN) * (180 / Math.PI);
-                                }
-                                
+                                    nRecentFlowIdx = rand.Next(nKosdaqIndexIdxPointer);
+                                fRecentInclination += (fInitKosdaqIndexUnGap - arrKosdaqIndex[nRecentFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nRecentFlowIdx, 0]) / 60);
+                                nRecentInclinationCnt++;
 
-
-                                if (fN == fM) // same
+                                if (nKosdaqIndexIdxPointer >= nRightArea)
                                 {
-                                    fKosdaqAngleDirection = 0;
-                                }
-                                else if (fN * fM == -1) // -1
-                                {
-                                    if (fN > 0)
-                                    {
-                                        fKosdaqAngleDirection = -90;
-                                    }
-                                    else
-                                    {
-                                        fKosdaqAngleDirection = 90;
-                                    }
+                                    nRightFlowIdx = rand.Next(nKosdaqIndexIdxPointer - nRightArea, nKosdaqIndexIdxPointer);
                                 }
                                 else
-                                {
-                                    // 각도가 반시계 방향이면 + 
-                                    //        시계방향이면 -
-                                    if (fN < fM)
-                                    {
-
-                                        if (fN * fM < 0)
-                                        {
-                                            if (fN * fM < -1)
-                                            {
-                                                fKosdaqAngleDirection = 180 + Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-                                            else
-                                            {
-                                                fKosdaqAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
+                                    nRightFlowIdx = rand.Next(nKosdaqIndexIdxPointer);
+                                fRightInclination += (fInitKosdaqIndexUnGap - arrKosdaqIndex[nRightFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nRightFlowIdx, 0]) / 60);
+                                nRightInclinationCnt++;
 
 
-                                        }
-                                        else
-                                        {
-                                            fKosdaqAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        if (fN * fM < 0)
-                                        {
-                                            if (fN * fM < -1)
-                                            {
-                                                fKosdaqAngleDirection = -180 + Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-                                            else
-                                            {
-                                                fKosdaqAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-
-                                        }
-                                        else
-                                        {
-                                            fKosdaqAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                        }
-
-                                    }
-                                }
                             }
-                          
+
+                            fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
+                            fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
+                            fResultRightInclinationEvg = fRightInclination / nRightInclinationCnt;
+                            fResultInitInclination = (fInitKosdaqIndexUnGap - fInitKosdaqIndexUnGap) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+                            fResultMaxInclination = (fInitKosdaqIndexUnGap - fKosdaqMaxFs) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+                            fResultMinInclination = (fInitKosdaqIndexUnGap - fKosdaqMinFs) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+
+                            // 분산 구하기
+                            for (int k = 0; k < nRandomi; k++)
+                            {
+                                nFlowIdxDiff = rand.Next(nKosdaqIndexIdxPointer);
+                                fY = fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nFlowIdxDiff, 0]) / 60) + fCurKosdaqIndexUnGap - fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fFluctuation += Math.Pow((fY - arrKosdaqIndex[nFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+
+
+                                if (nKosdaqIndexIdxPointer >= nRecentArea)
+                                {
+                                    nRecentFlowIdxDiff = rand.Next(nKosdaqIndexIdxPointer - nRecentArea, nKosdaqIndexIdxPointer);
+                                }
+                                else
+                                    nRecentFlowIdxDiff = rand.Next(nKosdaqIndexIdxPointer);
+                                fRecentY = fResultRecentInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nRecentFlowIdxDiff, 0]) / 60) + fCurKosdaqIndexUnGap - fResultRecentInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fRecentFluctuation += Math.Pow((fRecentY - arrKosdaqIndex[nRecentFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+
+                                if (nKosdaqIndexIdxPointer >= nRightArea)
+                                {
+                                    nRightFlowIdxDiff = rand.Next(nKosdaqIndexIdxPointer - nRightArea, nKosdaqIndexIdxPointer);
+                                }
+                                else
+                                    nRightFlowIdxDiff = rand.Next(nKosdaqIndexIdxPointer);
+                                fRightY = fResultRightInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)arrKosdaqIndex[nRightFlowIdxDiff, 0]) / 60) + fCurKosdaqIndexUnGap - fResultRightInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fRightFluctuation += Math.Pow((fRightY - arrKosdaqIndex[nRightFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+                            }
+
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 5] = fResultInclinationEvg / nMarketGap;  // 평균추세
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 6] = fResultRecentInclinationEvg / nMarketGap; // 근접추세
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 7] = Math.Sqrt(fFluctuation); // 평균분산
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 8] = Math.Sqrt(fRecentFluctuation); // 근접분산
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 9] = fResultRightInclinationEvg / nMarketGap; // 초근접추세
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 10] = Math.Sqrt(fRightFluctuation); // 초근접분산
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 11] = fResultInitInclination / nMarketGap; // 초기추세
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 12] = GetAngleBetween(0, arrKosdaqIndex[nKosdaqIndexIdxPointer, 11]); // 초기각도
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 13] = GetAngleBetween(0, arrKosdaqIndex[nKosdaqIndexIdxPointer, 5]);  // 평균각도
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 14] = GetAngleBetween(0, arrKosdaqIndex[nKosdaqIndexIdxPointer, 6]);  // 근접각도
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 15] = GetAngleBetween(0, arrKosdaqIndex[nKosdaqIndexIdxPointer, 9]);  // 초근접각도
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 16] = GetAngleBetween(0, fResultMaxInclination / nMarketGap); // 최대값각도
+                            arrKosdaqIndex[nKosdaqIndexIdxPointer, 17] = GetAngleBetween(0, fResultMinInclination / nMarketGap); // 최소값각도
+
                         }
+
                     }
                     /// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -1642,51 +1617,67 @@ namespace MJTradier
 
                     int nR = 3;
 
-                    eachStockArray[nCurIdx].lCurTotalPriceOfStock = eachStockArray[nCurIdx].lTotalNumOfStock * eachStockArray[nCurIdx].nFs;
+                    ea[nCurIdx].lCurTotalPriceOfStock = ea[nCurIdx].lTotalNumOfStock * ea[nCurIdx].nFs;
 
-                    if (eachStockArray[nCurIdx].nMarketGubun == KOSDAQ_ID)
+                    if (ea[nCurIdx].nMarketGubun == KOSDAQ_ID)
                     {
-                        fCurKosdaqIndexGap += (double)(eachStockArray[nCurIdx].lCurTotalPriceOfStock - eachStockArray[nCurIdx].lPrevTotalPriceOfStock) / INDEX_DEGREE;
-                        fCurKosdaqIndexUnGap += (double)(eachStockArray[nCurIdx].lCurTotalPriceOfStock - eachStockArray[nCurIdx].lPrevTotalPriceOfStock) / INDEX_DEGREE;
+                        fCurKosdaqIndexGap += (double)(ea[nCurIdx].lCurTotalPriceOfStock - ea[nCurIdx].lPrevTotalPriceOfStock) / INDEX_DEGREE;
+                        fCurKosdaqIndexUnGap += (double)(ea[nCurIdx].lCurTotalPriceOfStock - ea[nCurIdx].lPrevTotalPriceOfStock) / INDEX_DEGREE;
                     }
                     else
                     {
-                        fCurKospiIndexGap += (double)(eachStockArray[nCurIdx].lCurTotalPriceOfStock - eachStockArray[nCurIdx].lPrevTotalPriceOfStock) / INDEX_DEGREE;
-                        fCurKospiIndexUnGap += (double)(eachStockArray[nCurIdx].lCurTotalPriceOfStock - eachStockArray[nCurIdx].lPrevTotalPriceOfStock) / INDEX_DEGREE;
+                        fCurKospiIndexGap += (double)(ea[nCurIdx].lCurTotalPriceOfStock - ea[nCurIdx].lPrevTotalPriceOfStock) / INDEX_DEGREE;
+                        fCurKospiIndexUnGap += (double)(ea[nCurIdx].lCurTotalPriceOfStock - ea[nCurIdx].lPrevTotalPriceOfStock) / INDEX_DEGREE;
                     }
-                    eachStockArray[nCurIdx].lPrevTotalPriceOfStock = eachStockArray[nCurIdx].lCurTotalPriceOfStock;
+                    ea[nCurIdx].lPrevTotalPriceOfStock = ea[nCurIdx].lCurTotalPriceOfStock;
 
                     fCurKospiGapInterestRatio = (fCurKospiIndexGap - fInitKospiIndexGap) / fInitKospiIndexGap;
                     fCurKospiUnGapInterestRatio = (fCurKospiIndexUnGap - fInitKospiIndexUnGap) / fInitKospiIndexUnGap;
                     fCurKosdaqGapInterestRatio = (fCurKosdaqIndexGap - fInitKosdaqIndexGap) / fInitKosdaqIndexGap;
                     fCurKosdaqUnGapInterestRatio = (fCurKosdaqIndexUnGap - fInitKosdaqIndexUnGap) / fInitKosdaqIndexUnGap;
 
-                    if( nCurMarketSec != nSharedTime )
+                    if (nCurMarketSec != nSharedTime)
                     {
                         nCurMarketSec = nSharedTime;
-                        swLogMarketSituSec.WriteLine(nSharedTime.ToString() + "\t" 
-                            + Math.Round(fKosdaqGap,nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5] , nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6] , nR).ToString() + "\t" + Math.Round(fKosdaqZeroBasedAngleDirection,nR).ToString() + "\t" + Math.Round(fKosdaqAngleDirection, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7] , nR).ToString() + "\t"
+                        swLogMarketSituSecKosdaq.WriteLine(nSharedTime.ToString() + "\t"
+                            + Math.Round(fKosdaqGap, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 11], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 9], nR).ToString() + "\t"
+                            + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 8], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 10], nR).ToString() + "\t"
+                            + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 13], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 12], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 14], nR).ToString() + "\t"
+                            + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 15], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 16], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 17], nR).ToString() + "\t"
                             + Math.Round(fCurKosdaqIndexGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqGapInterestRatio * 100, nR).ToString() + "\t"
-                            + Math.Round(fCurKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqUnGapInterestRatio * 100, nR).ToString() + "\t" 
-                           
-                            + Math.Round(fKospiGap, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5] , nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6] , nR).ToString() + "\t" + Math.Round(fKospiZeroBasedAngleDirection, nR).ToString() + "\t" + Math.Round(fKospiAngleDirection, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7] , nR).ToString() + "\t"
-                            + Math.Round(fCurKospiIndexGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexGap, nR).ToString() + "\t" + Math.Round(fCurKospiGapInterestRatio * 100, nR).ToString() + "\t"
-                            + Math.Round(fCurKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKospiUnGapInterestRatio * 100, nR).ToString()
+                            + Math.Round(fCurKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqUnGapInterestRatio * 100, nR).ToString()
                             );
+                        swLogMarketSituSecKospi.WriteLine(nSharedTime.ToString() + "\t"
+                                                    + Math.Round(fKospiGap, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 11], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 9], nR).ToString() + "\t"
+                                                    + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 8], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 10], nR).ToString() + "\t"
+                                                    + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 13], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 12], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 14], nR).ToString() + "\t"
+                                                    + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 15], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 16], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 17], nR).ToString() + "\t"
+                                                    + Math.Round(fCurKospiIndexGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexGap, nR).ToString() + "\t" + Math.Round(fCurKospiGapInterestRatio * 100, nR).ToString() + "\t"
+                                                    + Math.Round(fCurKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKospiUnGapInterestRatio * 100, nR).ToString()
+                                                    );
                     }
+                    
 
-                    if (nCurMarketMin != (int)(SubTimeToTimeAndSec(nSharedTime , nFirstTime) / 60))
+                    if (nCurMarketMin != (int)(SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60))
                     {
                         nCurMarketMin = (int)(SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
-                        swLogMarketSituMin.WriteLine(nSharedTime.ToString() + "\t"
-                            + Math.Round(fKosdaqGap, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(fKosdaqZeroBasedAngleDirection, nR).ToString() + "\t" + Math.Round(fKosdaqAngleDirection, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7], nR).ToString() + "\t"
+                        swLogMarketSituMinKosdaq.WriteLine(nSharedTime.ToString() + "\t"
+                            + Math.Round(fKosdaqGap, nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 11], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 9], nR).ToString() + "\t"
+                            + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 7], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 8], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 10], nR).ToString() + "\t"
+                            + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 13], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 12], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 14], nR).ToString() + "\t"
+                            + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 15], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 16], nR).ToString() + "\t" + Math.Round(arrKosdaqIndex[nKosdaqIndexIdxPointer, 17], nR).ToString() + "\t"
                             + Math.Round(fCurKosdaqIndexGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqGapInterestRatio * 100, nR).ToString() + "\t"
-                            + Math.Round(fCurKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqUnGapInterestRatio * 100, nR).ToString() + "\t"
-
-                            + Math.Round(fKospiGap, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(fKospiZeroBasedAngleDirection, nR).ToString() + "\t" + Math.Round(fKospiAngleDirection, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7], nR).ToString() + "\t"
-                            + Math.Round(fCurKospiIndexGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexGap, nR).ToString() + "\t" + Math.Round(fCurKospiGapInterestRatio * 100, nR).ToString() + "\t"
-                            + Math.Round(fCurKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKospiUnGapInterestRatio * 100, nR).ToString()
+                            + Math.Round(fCurKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKosdaqIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKosdaqUnGapInterestRatio * 100, nR).ToString()
                             );
+
+                        swLogMarketSituMinKospi.WriteLine(nSharedTime.ToString() + "\t"
+                                                    + Math.Round(fKospiGap, nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 5], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 11], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 6], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 9], nR).ToString() + "\t"
+                                                    + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 7], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 8], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 10], nR).ToString() + "\t"
+                                                    + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 13], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 12], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 14], nR).ToString() + "\t"
+                                                    + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 15], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 16], nR).ToString() + "\t" + Math.Round(arrKospiIndex[nKospiIndexIdxPointer, 17], nR).ToString() + "\t"
+                                                    + Math.Round(fCurKospiIndexGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexGap, nR).ToString() + "\t" + Math.Round(fCurKospiGapInterestRatio * 100, nR).ToString() + "\t"
+                                                    + Math.Round(fCurKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fInitKospiIndexUnGap, nR).ToString() + "\t" + Math.Round(fCurKospiUnGapInterestRatio * 100, nR).ToString()
+                                                    );
                     }
 
 
@@ -1709,7 +1700,7 @@ namespace MJTradier
                         fKosdaqIndexMin = fCurKosdaqIndexUnGap;
 
 
-                    if (eachStockArray[nCurIdx].nCnt == 1)  // 첫데이터는  tv가 너무 높을 수 있느니 패스
+                    if (ea[nCurIdx].nCnt == 1)  // 첫데이터는  tv가 너무 높을 수 있느니 패스
                         return;
 
 
@@ -1717,7 +1708,7 @@ namespace MJTradier
 
 
 
-                 
+
 
 
 
@@ -1726,167 +1717,167 @@ namespace MJTradier
                     ////////////////////////////////////////////////////////////////////
                     ///////////// 점수 Part /////////////////////////////////////////////
 
-                    eachStockArray[nCurIdx].lCurTradeAmount += Math.Abs(eachStockArray[nCurIdx].nTv);
-                    if (eachStockArray[nCurIdx].nTv > 0)
-                        eachStockArray[nCurIdx].lCurTradeAmountOnlyUp += eachStockArray[nCurIdx].nTv;
+                    ea[nCurIdx].lCurTradeAmount += Math.Abs(ea[nCurIdx].nTv);
+                    if (ea[nCurIdx].nTv > 0)
+                        ea[nCurIdx].lCurTradeAmountOnlyUp += ea[nCurIdx].nTv;
                     else
-                        eachStockArray[nCurIdx].lCurTradeAmountOnlyDown -= eachStockArray[nCurIdx].nTv;
+                        ea[nCurIdx].lCurTradeAmountOnlyDown -= ea[nCurIdx].nTv;
 
-                    eachStockArray[nCurIdx].fCurTradeAmountRatio = (double)eachStockArray[nCurIdx].lCurTradeAmount / eachStockArray[nCurIdx].lShareOutstanding;
-                    eachStockArray[nCurIdx].fCurTradeAmountRatioOnlyUp = (double)eachStockArray[nCurIdx].lCurTradeAmountOnlyUp / eachStockArray[nCurIdx].lShareOutstanding;
-                    eachStockArray[nCurIdx].fCurTradeAmountRatioOnlyDown = (double)eachStockArray[nCurIdx].lCurTradeAmountOnlyDown / eachStockArray[nCurIdx].lShareOutstanding;
+                    ea[nCurIdx].fCurTradeAmountRatio = (double)ea[nCurIdx].lCurTradeAmount / ea[nCurIdx].lShareOutstanding;
+                    ea[nCurIdx].fCurTradeAmountRatioOnlyUp = (double)ea[nCurIdx].lCurTradeAmountOnlyUp / ea[nCurIdx].lShareOutstanding;
+                    ea[nCurIdx].fCurTradeAmountRatioOnlyDown = (double)ea[nCurIdx].lCurTradeAmountOnlyDown / ea[nCurIdx].lShareOutstanding;
 
                     // 일정시간마다 fJar 값을 감소시킨다. 이 일정시간을 어떻게 매길것인 지는 고민해볼 문제
                     // 시간 당 ... 
-                    int nTimeUpdate = SubTimeToTimeAndSec(nSharedTime, eachStockArray[nCurIdx].nPrevUpdateTime) / nUpdateTime;
+                    int nTimeUpdate = SubTimeToTimeAndSec(nSharedTime, ea[nCurIdx].nPrevUpdateTime) / nUpdateTime;
                     for (int idxUpdate = 0; idxUpdate < nTimeUpdate; idxUpdate++)
                     {
                         // 스피드 업데이트
-                        if (eachStockArray[nCurIdx].fSpeedVal == 0)
-                            eachStockArray[nCurIdx].fSpeedVal = eachStockArray[nCurIdx].nSpeedPush;
+                        if (ea[nCurIdx].fSpeedVal == 0)
+                            ea[nCurIdx].fSpeedVal = ea[nCurIdx].nSpeedPush;
                         else
-                            eachStockArray[nCurIdx].fSpeedVal = eachStockArray[nCurIdx].nSpeedPush * fPushWeight + eachStockArray[nCurIdx].fSpeedVal * (1 - fPushWeight);
-                        eachStockArray[nCurIdx].nSpeedPush = 0;
+                            ea[nCurIdx].fSpeedVal = ea[nCurIdx].nSpeedPush * fPushWeight + ea[nCurIdx].fSpeedVal * (1 - fPushWeight);
+                        ea[nCurIdx].nSpeedPush = 0;
 
                         // 체결량 업데이트
-                        if (eachStockArray[nCurIdx].fTradeVal == 0)
-                            eachStockArray[nCurIdx].fTradeVal = eachStockArray[nCurIdx].fTradePush;
+                        if (ea[nCurIdx].fTradeVal == 0)
+                            ea[nCurIdx].fTradeVal = ea[nCurIdx].fTradePush;
                         else
-                            eachStockArray[nCurIdx].fTradeVal = eachStockArray[nCurIdx].fTradePush * fPushWeight + eachStockArray[nCurIdx].fTradeVal * (1 - fPushWeight);
-                        eachStockArray[nCurIdx].fTradePush = 0;
+                            ea[nCurIdx].fTradeVal = ea[nCurIdx].fTradePush * fPushWeight + ea[nCurIdx].fTradeVal * (1 - fPushWeight);
+                        ea[nCurIdx].fTradePush = 0;
 
                         // 순체결량 업데이트
-                        if (eachStockArray[nCurIdx].fPureTradeVal == 0)
-                            eachStockArray[nCurIdx].fPureTradeVal = eachStockArray[nCurIdx].fPureTradePush;
+                        if (ea[nCurIdx].fPureTradeVal == 0)
+                            ea[nCurIdx].fPureTradeVal = ea[nCurIdx].fPureTradePush;
                         else
-                            eachStockArray[nCurIdx].fPureTradeVal = eachStockArray[nCurIdx].fPureTradePush * fPushWeight + eachStockArray[nCurIdx].fPureTradeVal * (1 - fPushWeight);
-                        eachStockArray[nCurIdx].fPureTradePush = 0;
+                            ea[nCurIdx].fPureTradeVal = ea[nCurIdx].fPureTradePush * fPushWeight + ea[nCurIdx].fPureTradeVal * (1 - fPushWeight);
+                        ea[nCurIdx].fPureTradePush = 0;
 
-                        eachStockArray[nCurIdx].nPrevUpdateTime = AddTimeBySec(eachStockArray[nCurIdx].nPrevUpdateTime, nUpdateTime);
+                        ea[nCurIdx].nPrevUpdateTime = AddTimeBySec(ea[nCurIdx].nPrevUpdateTime, nUpdateTime);
                         if (idxUpdate == 0)
-                            eachStockArray[nCurIdx].nScoreCheckTrigger++;
+                            ea[nCurIdx].nScoreCheckTrigger++;
                     }
                     // 가격은 매초당 조금씩 줄여나가게 한다
                     // 1분이 지났을 시 0.547퍼센트
-                    int nTimeGap = SubTimeToTimeAndSec(nSharedTime, eachStockArray[nCurIdx].nPrevPriceUpdateTime);
+                    int nTimeGap = SubTimeToTimeAndSec(nSharedTime, ea[nCurIdx].nPrevPriceUpdateTime);
                     for (int idxTimeGap = 0; idxTimeGap < nTimeGap; idxTimeGap++)
                     {
                         // 가격변화 업데이트
-                        eachStockArray[nCurIdx].fPowerLongJar *= 0.999;
-                        eachStockArray[nCurIdx].fPowerJar *= 0.995;
-                        eachStockArray[nCurIdx].fPowerOnlyUp *= 0.995;
-                        eachStockArray[nCurIdx].fPowerOnlyDown *= 0.995;
+                        ea[nCurIdx].fPowerLongJar *= 0.999;
+                        ea[nCurIdx].fPowerJar *= 0.995;
+                        ea[nCurIdx].fPowerOnlyUp *= 0.995;
+                        ea[nCurIdx].fPowerOnlyDown *= 0.995;
 
-                        eachStockArray[nCurIdx].nPrevPriceUpdateTime = nSharedTime;
+                        ea[nCurIdx].nPrevPriceUpdateTime = nSharedTime;
                     }
 
                     // 파워는 최우선매수호가와 초기가격의 손익률로 계산한다
-                    eachStockArray[nCurIdx].fPowerWithoutGap = eachStockArray[nCurIdx].fPower - eachStockArray[nCurIdx].fStartGap;
+                    ea[nCurIdx].fPowerWithoutGap = ea[nCurIdx].fPower - ea[nCurIdx].fStartGap;
 
 
-                    int nTimePassed = SubTimeToTimeAndSec(nSharedTime, eachStockArray[nCurIdx].nPrevUpdateTime); // 시간이 지났다!
+                    int nTimePassed = SubTimeToTimeAndSec(nSharedTime, ea[nCurIdx].nPrevUpdateTime); // 시간이 지났다!
                     double fTimePassedWeight = (double)nTimePassed / nUpdateTime; // 시간이 얼만큼 지났느냐 0 ~ ( nUpdateTime -1) /nUpdateTime
                     double fTimePassedPushWeight = fTimePassedWeight * fPushWeight;
 
-                 
+
 
                     //  속도 실시간 처리
-                    eachStockArray[nCurIdx].nSpeedPush++;
-                    if (eachStockArray[nCurIdx].fSpeedVal == 0)
-                        eachStockArray[nCurIdx].fCurSpeed = (double)eachStockArray[nCurIdx].nSpeedPush / nUpdateTime;
+                    ea[nCurIdx].nSpeedPush++;
+                    if (ea[nCurIdx].fSpeedVal == 0)
+                        ea[nCurIdx].fCurSpeed = (double)ea[nCurIdx].nSpeedPush / nUpdateTime;
                     else
-                        eachStockArray[nCurIdx].fCurSpeed = (eachStockArray[nCurIdx].nSpeedPush * fTimePassedPushWeight + eachStockArray[nCurIdx].fSpeedVal * (1 - fTimePassedPushWeight)) / nUpdateTime;
+                        ea[nCurIdx].fCurSpeed = (ea[nCurIdx].nSpeedPush * fTimePassedPushWeight + ea[nCurIdx].fSpeedVal * (1 - fTimePassedPushWeight)) / nUpdateTime;
 
 
                     // 체결량 실시간 처리
-                    eachStockArray[nCurIdx].fTradePush += Math.Abs(eachStockArray[nCurIdx].nTv);
+                    ea[nCurIdx].fTradePush += Math.Abs(ea[nCurIdx].nTv);
 
-                    if (eachStockArray[nCurIdx].fTradeVal == 0)
-                        eachStockArray[nCurIdx].fCurTrade = eachStockArray[nCurIdx].fTradePush;
+                    if (ea[nCurIdx].fTradeVal == 0)
+                        ea[nCurIdx].fCurTrade = ea[nCurIdx].fTradePush;
                     else
-                        eachStockArray[nCurIdx].fCurTrade = eachStockArray[nCurIdx].fTradePush * fTimePassedPushWeight + eachStockArray[nCurIdx].fTradeVal * (1 - fTimePassedPushWeight);
+                        ea[nCurIdx].fCurTrade = ea[nCurIdx].fTradePush * fTimePassedPushWeight + ea[nCurIdx].fTradeVal * (1 - fTimePassedPushWeight);
 
                     // 순체결량 실시간 처리
-                    eachStockArray[nCurIdx].fPureTradePush += eachStockArray[nCurIdx].nTv;
-                    if (eachStockArray[nCurIdx].fPureTradeVal == 0)
-                        eachStockArray[nCurIdx].fCurPureTrade = eachStockArray[nCurIdx].fPureTradePush;
+                    ea[nCurIdx].fPureTradePush += ea[nCurIdx].nTv;
+                    if (ea[nCurIdx].fPureTradeVal == 0)
+                        ea[nCurIdx].fCurPureTrade = ea[nCurIdx].fPureTradePush;
                     else
-                        eachStockArray[nCurIdx].fCurPureTrade = eachStockArray[nCurIdx].fPureTradePush * fTimePassedPushWeight + eachStockArray[nCurIdx].fPureTradeVal * (1 - fTimePassedPushWeight);
+                        ea[nCurIdx].fCurPureTrade = ea[nCurIdx].fPureTradePush * fTimePassedPushWeight + ea[nCurIdx].fPureTradeVal * (1 - fTimePassedPushWeight);
 
 
 
                     // 가격변화 실시간 처리
-                    eachStockArray[nCurIdx].fPowerJar += (eachStockArray[nCurIdx].fPowerWithoutGap - eachStockArray[nCurIdx].fPrevPowerWithoutGap) * 100;
-                    eachStockArray[nCurIdx].fPowerLongJar += (eachStockArray[nCurIdx].fPowerWithoutGap - eachStockArray[nCurIdx].fPrevPowerWithoutGap) * 100;
-                    eachStockArray[nCurIdx].fPowerOnlyUp += (eachStockArray[nCurIdx].fPowerWithoutGap - eachStockArray[nCurIdx].fPrevPowerWithoutGap) * 100;
-                    eachStockArray[nCurIdx].fPowerOnlyDown += (eachStockArray[nCurIdx].fPowerWithoutGap - eachStockArray[nCurIdx].fPrevPowerWithoutGap) * 100;
-                    if(eachStockArray[nCurIdx].fPowerOnlyUp < 0)
+                    ea[nCurIdx].fPowerJar += (ea[nCurIdx].fPowerWithoutGap - ea[nCurIdx].fPrevPowerWithoutGap) * 100;
+                    ea[nCurIdx].fPowerLongJar += (ea[nCurIdx].fPowerWithoutGap - ea[nCurIdx].fPrevPowerWithoutGap) * 100;
+                    ea[nCurIdx].fPowerOnlyUp += (ea[nCurIdx].fPowerWithoutGap - ea[nCurIdx].fPrevPowerWithoutGap) * 100;
+                    ea[nCurIdx].fPowerOnlyDown += (ea[nCurIdx].fPowerWithoutGap - ea[nCurIdx].fPrevPowerWithoutGap) * 100;
+                    if (ea[nCurIdx].fPowerOnlyUp < 0)
                     {
-                        eachStockArray[nCurIdx].fPowerOnlyUp = 0;
+                        ea[nCurIdx].fPowerOnlyUp = 0;
                     }
-                    if(eachStockArray[nCurIdx].fPowerOnlyDown > 0)
+                    if (ea[nCurIdx].fPowerOnlyDown > 0)
                     {
-                        eachStockArray[nCurIdx].fPowerOnlyDown = 0;
+                        ea[nCurIdx].fPowerOnlyDown = 0;
                     }
 
 
-                    eachStockArray[nCurIdx].fPrevPowerWithoutGap = eachStockArray[nCurIdx].fPowerWithoutGap;
+                    ea[nCurIdx].fPrevPowerWithoutGap = ea[nCurIdx].fPowerWithoutGap;
 
                     // 실시간 처리
-                    eachStockArray[nCurIdx].fSharePerTrade = eachStockArray[nCurIdx].lShareOutstanding / eachStockArray[nCurIdx].fCurTrade; // 0에 가까울 수  록 좋음
+                    ea[nCurIdx].fSharePerTrade = ea[nCurIdx].lShareOutstanding / ea[nCurIdx].fCurTrade; // 0에 가까울 수  록 좋음
 
-                    if (eachStockArray[nCurIdx].fTotalHogaVolumeVal == 0)
+                    if (ea[nCurIdx].fTotalHogaVolumeVal == 0)
                     {
-                        eachStockArray[nCurIdx].fSharePerHoga = BILLION;
-                        eachStockArray[nCurIdx].fHogaPerTrade = BILLION;
+                        ea[nCurIdx].fSharePerHoga = BILLION;
+                        ea[nCurIdx].fHogaPerTrade = BILLION;
                     }
                     else
                     {
-                        eachStockArray[nCurIdx].fSharePerHoga = eachStockArray[nCurIdx].lShareOutstanding / eachStockArray[nCurIdx].fTotalHogaVolumeVal; // 0에 가까울 수 록 좋음
-                        eachStockArray[nCurIdx].fHogaPerTrade = eachStockArray[nCurIdx].fTotalHogaVolumeVal / eachStockArray[nCurIdx].fCurTrade; // 0에 가까울 수 록 좋음
+                        ea[nCurIdx].fSharePerHoga = ea[nCurIdx].lShareOutstanding / ea[nCurIdx].fTotalHogaVolumeVal; // 0에 가까울 수 록 좋음
+                        ea[nCurIdx].fHogaPerTrade = ea[nCurIdx].fTotalHogaVolumeVal / ea[nCurIdx].fCurTrade; // 0에 가까울 수 록 좋음
                     }
 
                     /// 점수 공식 
-                    if ((eachStockArray[nCurIdx].fCurTrade * eachStockArray[nCurIdx].nFs) < MILLION) // 현체결량이 100만원 이하면
-                        eachStockArray[nCurIdx].fPurePerTrade = eachStockArray[nCurIdx].fCurPureTrade / (MILLION / (double)eachStockArray[nCurIdx].nFs);
+                    if ((ea[nCurIdx].fCurTrade * ea[nCurIdx].nFs) < MILLION) // 현체결량이 100만원 이하면
+                        ea[nCurIdx].fPurePerTrade = ea[nCurIdx].fCurPureTrade / (MILLION / (double)ea[nCurIdx].nFs);
                     else
                     {
-                        if (Math.Abs(eachStockArray[nCurIdx].fCurPureTrade) > eachStockArray[nCurIdx].fCurTrade)
+                        if (Math.Abs(ea[nCurIdx].fCurPureTrade) > ea[nCurIdx].fCurTrade)
                         {
-                            eachStockArray[nCurIdx].fPurePerTrade = eachStockArray[nCurIdx].fCurPureTrade / (eachStockArray[nCurIdx].fCurTrade + Math.Abs(eachStockArray[nCurIdx].fCurPureTrade));
+                            ea[nCurIdx].fPurePerTrade = ea[nCurIdx].fCurPureTrade / (ea[nCurIdx].fCurTrade + Math.Abs(ea[nCurIdx].fCurPureTrade));
                         }
                         else
-                            eachStockArray[nCurIdx].fPurePerTrade = eachStockArray[nCurIdx].fCurPureTrade / eachStockArray[nCurIdx].fCurTrade; // 절대값 1에 가까울 수 록 좋음 -면 매도, +면 매수
+                            ea[nCurIdx].fPurePerTrade = ea[nCurIdx].fCurPureTrade / ea[nCurIdx].fCurTrade; // 절대값 1에 가까울 수 록 좋음 -면 매도, +면 매수
                     }
 
                     /// direction
-                    // eachStockArray[nCurIdx].fScoreDirection = eachStockArray[nCurIdx].f2000Ratio * 0.15 + eachStockArray[nCurIdx].fPurePerTrade * 0.5 + eachStockArray[nCurIdx].fHogaRatioVal * 0.35;
-                    eachStockArray[nCurIdx].fScoreDirection = eachStockArray[nCurIdx].fPurePerTrade * 0.65 + eachStockArray[nCurIdx].fHogaRatioVal * 0.35;
+                    // ea[nCurIdx].fScoreDirection = ea[nCurIdx].f2000Ratio * 0.15 + ea[nCurIdx].fPurePerTrade * 0.5 + ea[nCurIdx].fHogaRatioVal * 0.35;
+                    ea[nCurIdx].fScoreDirection = ea[nCurIdx].fPurePerTrade * 0.65 + ea[nCurIdx].fHogaRatioVal * 0.35;
 
-                   
+
                     /// volume 
                     ///
 
-                    double fLog20 = eachStockArray[nCurIdx].fSharePerHoga / 100;
-                    double fLog2 = eachStockArray[nCurIdx].fHogaPerTrade;
+                    double fLog20 = ea[nCurIdx].fSharePerHoga / 100;
+                    double fLog2 = ea[nCurIdx].fHogaPerTrade;
 
-                    eachStockArray[nCurIdx].fScoreVolume = 0;
+                    ea[nCurIdx].fScoreVolume = 0;
 
                     if (fLog20 < 1 && fLog2 < 1)
-                        eachStockArray[nCurIdx].fScoreVolume = 100;
+                        ea[nCurIdx].fScoreVolume = 100;
                     else
                     {
-                        if ( fLog20 < 1)
+                        if (fLog20 < 1)
                         {
-                            eachStockArray[nCurIdx].fScoreVolume = 40 + 60 / fLog2;
+                            ea[nCurIdx].fScoreVolume = 40 + 60 / fLog2;
                         }
                         else if (fLog2 < 1)
                         {
-                            eachStockArray[nCurIdx].fScoreVolume = 40 / fLog20 + 60;
+                            ea[nCurIdx].fScoreVolume = 40 / fLog20 + 60;
                         }
                         else
                         {
-                            eachStockArray[nCurIdx].fScoreVolume = 40 / fLog20 + 60 / fLog2;
+                            ea[nCurIdx].fScoreVolume = 40 / fLog20 + 60 / fLog2;
                         }
                     }
 
@@ -1895,40 +1886,40 @@ namespace MJTradier
                     /// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     /// 
                     int nMinPointer = (int)(SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60) + BRUSH; // 현재시간과 9시를 뺀 결과를 분단위로 받음
-                    if (eachStockArray[nCurIdx].nIdxPointer != nMinPointer) // 기록된 포인터와 새로운 포인터가 다르면 (과거처리)
+                    if (ea[nCurIdx].nIdxPointer != nMinPointer) // 기록된 포인터와 새로운 포인터가 다르면 (과거처리)
                     {
-                        int nDiff = nMinPointer - eachStockArray[nCurIdx].nIdxPointer;
-                        eachStockArray[nCurIdx].isGooiTime = false;
-                        eachStockArray[nCurIdx].isGooiTimeEverage = false;
-                        eachStockArray[nCurIdx].isGooiTimeEnd = false;
-                        eachStockArray[nCurIdx].isGooiTimeEndEverage = false;
+                        int nDiff = nMinPointer - ea[nCurIdx].nIdxPointer;
+                        ea[nCurIdx].isGooiTime = false;
+                        ea[nCurIdx].isGooiTimeEverage = false;
+                        ea[nCurIdx].isGooiTimeEnd = false;
+                        ea[nCurIdx].isGooiTimeEndEverage = false;
 
-                        for ( int eachStockIterIdx = 0; eachStockIterIdx < nDiff; eachStockIterIdx++)
+                        for (int eachStockIterIdx = 0; eachStockIterIdx < nDiff; eachStockIterIdx++)
                         {
-                            if (eachStockArray[nCurIdx].nIdxPointer < BRUSH)
+                            if (ea[nCurIdx].nIdxPointer < BRUSH)
                             {
-                                eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0] = nFirstTime; 
+                                ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0] = nFirstTime;
                             }
                             else
                             {
-                                eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0] = AddTimeBySec(nFirstTime, (eachStockArray[nCurIdx].nIdxPointer - BRUSH) * 60);
+                                ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0] = AddTimeBySec(nFirstTime, (ea[nCurIdx].nIdxPointer - BRUSH) * 60);
                             }
 
-                            if (eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2] == 0) // 기록이 아예없는 경우 ( 초기 or vi or 거래없는경우)
+                            if (ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 2] == 0) // 기록이 아예없는 경우 ( 초기 or vi or 거래없는경우)
                             {
-                                if (eachStockArray[nCurIdx].nFsPointer == 0) // 초기
+                                if (ea[nCurIdx].nFsPointer == 0) // 초기
                                 {
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1] = eachStockArray[nCurIdx].nTodayStartPrice;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2] = eachStockArray[nCurIdx].nTodayStartPrice;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 3] = eachStockArray[nCurIdx].nTodayStartPrice;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 4] = eachStockArray[nCurIdx].nTodayStartPrice;
+                                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 1] = ea[nCurIdx].nTodayStartPrice;
+                                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 2] = ea[nCurIdx].nTodayStartPrice;
+                                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 3] = ea[nCurIdx].nTodayStartPrice;
+                                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 4] = ea[nCurIdx].nTodayStartPrice;
                                 }
                                 else // vi or 거래없는경우
                                 {
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1] = eachStockArray[nCurIdx].nFsPointer;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2] = eachStockArray[nCurIdx].nFsPointer;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 3] = eachStockArray[nCurIdx].nFsPointer;
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 4] = eachStockArray[nCurIdx].nFsPointer;
+                                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 1] = ea[nCurIdx].nFsPointer;
+                                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 2] = ea[nCurIdx].nFsPointer;
+                                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 3] = ea[nCurIdx].nFsPointer;
+                                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 4] = ea[nCurIdx].nFsPointer;
                                 }
                             }
                             else // 기록이 존재하는경우  그냥 인덱스만 올리면 된다.  ( 추후 알맹이 추가)
@@ -1936,327 +1927,280 @@ namespace MJTradier
                                 int maxPart;
                                 int minPart;
 
-                                if (eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1] < eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2]) // 시가 < 종가
+                                if (ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 1] < ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 2]) // 시가 < 종가
                                 {
-                                    maxPart = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2];
-                                    minPart = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1];
+                                    maxPart = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 2];
+                                    minPart = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 1];
                                 }
                                 else
                                 {
-                                    maxPart = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1];
-                                    minPart = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2];
+                                    maxPart = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 1];
+                                    minPart = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 2];
                                 }
                                 int EverageFs = (maxPart + minPart) / 2;
 
-                                int maxTop = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 3]; // 고가 
-                                int minBottom = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 4]; // 저가
+                                int maxTop = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 3]; // 고가 
+                                int minBottom = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 4]; // 저가
                                 int EverageMiddle = (maxTop + minBottom) / 2;
 
 
                                 // 시종가
-                                if (eachStockArray[nCurIdx].nMaxFs < maxPart)
+                                if (ea[nCurIdx].nMaxFs < maxPart)
                                 {
-                                    eachStockArray[nCurIdx].nMaxFs = maxPart;
-                                    eachStockArray[nCurIdx].nMaxTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
-                                    eachStockArray[nCurIdx].nMinFs = maxPart;
-                                    eachStockArray[nCurIdx].nMinTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMaxFs = maxPart;
+                                    ea[nCurIdx].nMaxTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMinFs = maxPart;
+                                    ea[nCurIdx].nMinTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
                                 }
 
-                                if (eachStockArray[nCurIdx].nMinFs > minPart)
+                                if (ea[nCurIdx].nMinFs > minPart)
                                 {
-                                    eachStockArray[nCurIdx].nMinFs = minPart;
-                                    eachStockArray[nCurIdx].nMinTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMinFs = minPart;
+                                    ea[nCurIdx].nMinTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
+                                }
+
+                                if (ea[nCurIdx].nRealMinFs == 0 || ea[nCurIdx].nRealMinFs > minPart)
+                                {
+                                    ea[nCurIdx].nRealMinFs = minPart;
                                 }
 
                                 // 시종가평균
-                                if (eachStockArray[nCurIdx].nMaxEverageFs < EverageFs)
+                                if (ea[nCurIdx].nMaxEverageFs < EverageFs)
                                 {
-                                    eachStockArray[nCurIdx].nMaxEverageFs = EverageFs;
-                                    eachStockArray[nCurIdx].nMaxEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
-                                    eachStockArray[nCurIdx].nMinEverageFs = EverageFs;
-                                    eachStockArray[nCurIdx].nMinEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMaxEverageFs = EverageFs;
+                                    ea[nCurIdx].nMaxEverageTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMinEverageFs = EverageFs;
+                                    ea[nCurIdx].nMinEverageTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
                                 }
-                                if (eachStockArray[nCurIdx].nMinEverageFs > EverageFs)
+                                if (ea[nCurIdx].nMinEverageFs > EverageFs)
                                 {
-                                    eachStockArray[nCurIdx].nMinEverageFs = EverageFs;
-                                    eachStockArray[nCurIdx].nMinEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMinEverageFs = EverageFs;
+                                    ea[nCurIdx].nMinEverageTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
                                 }
 
                                 // 저고가
-                                if (eachStockArray[nCurIdx].nMaxTopFs < maxTop)
+                                if (ea[nCurIdx].nMaxTopFs < maxTop)
                                 {
-                                    eachStockArray[nCurIdx].nMaxTopFs = maxTop;
-                                    eachStockArray[nCurIdx].nMaxTopTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
-                                    eachStockArray[nCurIdx].nMinBottomFs = maxTop;
-                                    eachStockArray[nCurIdx].nMinBottomTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMaxTopFs = maxTop;
+                                    ea[nCurIdx].nMaxTopTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMinBottomFs = maxTop;
+                                    ea[nCurIdx].nMinBottomTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
                                 }
-                                if (eachStockArray[nCurIdx].nMinBottomFs > minBottom)
+                                if (ea[nCurIdx].nMinBottomFs > minBottom)
                                 {
-                                    eachStockArray[nCurIdx].nMinBottomFs = minBottom;
-                                    eachStockArray[nCurIdx].nMinBottomTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMinBottomFs = minBottom;
+                                    ea[nCurIdx].nMinBottomTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
                                 }
 
                                 // 저고가평균
-                                if (eachStockArray[nCurIdx].nMaxTopEverageFs < EverageMiddle)
+                                if (ea[nCurIdx].nMaxTopEverageFs < EverageMiddle)
                                 {
-                                    eachStockArray[nCurIdx].nMaxTopEverageFs = EverageMiddle;
-                                    eachStockArray[nCurIdx].nMaxTopEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
-                                    eachStockArray[nCurIdx].nMinBottomEverageFs = EverageMiddle;
-                                    eachStockArray[nCurIdx].nMinBottomEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMaxTopEverageFs = EverageMiddle;
+                                    ea[nCurIdx].nMaxTopEverageTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMinBottomEverageFs = EverageMiddle;
+                                    ea[nCurIdx].nMinBottomEverageTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
                                 }
-                                if (eachStockArray[nCurIdx].nMinBottomEverageFs > EverageMiddle)
+                                if (ea[nCurIdx].nMinBottomEverageFs > EverageMiddle)
                                 {
-                                    eachStockArray[nCurIdx].nMinBottomEverageFs = EverageMiddle;
-                                    eachStockArray[nCurIdx].nMinBottomEverageTime = (int)eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 0];
+                                    ea[nCurIdx].nMinBottomEverageFs = EverageMiddle;
+                                    ea[nCurIdx].nMinBottomEverageTime = (int)ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 0];
                                 }
                             }
 
-                            eachStockArray[nCurIdx].nIdxPointer++;
-                           
-
-                            if (eachStockArray[nCurIdx].nIdxPointer > BRUSH) // 추세 확인
-                            {
-
-                                fInclination = 0;
-                                fRecentInclination = 0;
-                                nInclinationCnt = 0;
-                                nRecentInclinationCnt = 0;
-                                fFluctuation = 0;
-
-                                for (int j = 0; j < nRandomi; j++)
-                                {
-                                    nFlowIdx = rand.Next(eachStockArray[nCurIdx].nIdxPointer);
-                                    fInclination += (eachStockArray[nCurIdx].nFs - eachStockArray[nCurIdx].arrRecord[nFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)eachStockArray[nCurIdx].arrRecord[nFlowIdx, 0]) /  60);
-                                    nInclinationCnt++;
-
-                                    if(double.IsInfinity(fInclination))
-                                    {
-                                        int b = 3;
-                                    }
-
-                                }
-                                fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
-
-                                for (int k = 0; k < nRandomi; k++)
-                                {
-                                    if (eachStockArray[nCurIdx].nIdxPointer >= nRecentArea)
-                                    {
-                                        nFlowIdx = rand.Next(eachStockArray[nCurIdx].nIdxPointer - nRecentArea, eachStockArray[nCurIdx].nIdxPointer);
-                                    }
-                                    else
-                                        nFlowIdx = rand.Next(eachStockArray[nCurIdx].nIdxPointer);
-                                    nRecentInclinationCnt++;
-                                    fRecentInclination += (eachStockArray[nCurIdx].nFs - eachStockArray[nCurIdx].arrRecord[nFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)eachStockArray[nCurIdx].arrRecord[nFlowIdx, 0]) / 60);
-
-                                    nFlowIdxDiff = rand.Next(eachStockArray[nCurIdx].nIdxPointer);
-
-                                    fY = fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)eachStockArray[nCurIdx].arrRecord[nFlowIdxDiff, 0]) / 60) + eachStockArray[nCurIdx].nFs - fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
-                                    fFluctuation += Math.Pow(fY - eachStockArray[nCurIdx].arrRecord[nFlowIdxDiff, 2], 2); // 변동폭
-                                }
-                                fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
-
-                                if (eachStockArray[nCurIdx].nMarketGubun == KOSPI_ID)
-                                {
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 5] = fResultInclinationEvg / GetKospiGap(eachStockArray[nCurIdx].nYesterdayEndPrice);
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6] = fResultRecentInclinationEvg / GetKospiGap(eachStockArray[nCurIdx].nYesterdayEndPrice);
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 7] = Math.Sqrt(fFluctuation) / GetKospiGap(eachStockArray[nCurIdx].nYesterdayEndPrice); 
-                                }
-                                else
-                                {
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 5] = fResultInclinationEvg / GetKosdaqGap(eachStockArray[nCurIdx].nYesterdayEndPrice);
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6] = fResultRecentInclinationEvg / GetKosdaqGap(eachStockArray[nCurIdx].nYesterdayEndPrice);
-                                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 7] = Math.Sqrt(fFluctuation) / GetKosdaqGap(eachStockArray[nCurIdx].nYesterdayEndPrice);
-                                }
-
-                                double fN = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 5];
-                                double fM = eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6];
-                                int nNDown = 0;
-                                int nNUp = 0;
+                            ea[nCurIdx].nIdxPointer++;
 
 
-                                while (Math.Abs(fN) > 10)
-                                {
-                                    nNDown++;
-                                    fN /= 10;
-                                }
-
-                                while (fN != 0 && Math.Abs(fN) < 0.1)
-                                {
-                                    nNUp++;
-                                    fN *= 10;
-                                }
-
-                                for (int j = 0; j < nNDown; j++)
-                                {
-                                    fM /= 10;
-                                }
-                                for (int k = 0; k < nNUp; k++)
-                                {
-                                    fM *= 10;
-                                }
-
-                                if (fN == 0)
-                                {
-                                    eachStockArray[nCurIdx].fZeroBasedAngleDirection = 0;
-                                }
-                                else
-                                {
-                                    eachStockArray[nCurIdx].fZeroBasedAngleDirection = Math.Atan(fN) * (180 / Math.PI);
-                                }
-                                
-
-
-                                if (fN == fM) // same
-                                {
-                                    eachStockArray[nCurIdx].fAngleDirection = 0;
-                                }
-                                else if(fN * fM == -1) // -1
-                                {
-                                    if( fN > 0)
-                                    {
-                                        eachStockArray[nCurIdx].fAngleDirection = -90;
-                                    }
-                                    else
-                                    {
-                                        eachStockArray[nCurIdx].fAngleDirection = 90;
-                                    }
-                                }
-                                else
-                                {
-                                    // 각도가 반시계 방향이면 + 
-                                    //        시계방향이면 -
-                                    if (fN < fM)
-                                    {
-
-                                        if (fN * fM < 0)
-                                        {
-                                            if (fN * fM < -1)
-                                            {
-                                                eachStockArray[nCurIdx].fAngleDirection = 180 + Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-                                            else
-                                            {
-                                                eachStockArray[nCurIdx].fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-
-
-                                        }
-                                        else
-                                        {
-                                            eachStockArray[nCurIdx].fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                        }
-
-                                    }
-                                    else
-                                    {
-                                        if (fN * fM < 0)
-                                        {
-                                            if (fN * fM < -1)
-                                            {
-                                                eachStockArray[nCurIdx].fAngleDirection = -180 + Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-                                            else
-                                            {
-                                                eachStockArray[nCurIdx].fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                            }
-
-                                        }
-                                        else
-                                        {
-                                            eachStockArray[nCurIdx].fAngleDirection = Math.Atan((fM - fN) / (1 + fN * fM)) * (180 / Math.PI);
-                                        }
-
-                                    }
-                                }
-
-                            }
-
-                           
                         }
 
-                        eachStockArray[nCurIdx].nFirstPointer = 0;
-                        eachStockArray[nCurIdx].nLastPointer = 0;
-                        eachStockArray[nCurIdx].nMaxPointer = 0;
-                        eachStockArray[nCurIdx].nMinPointer = 0;
 
-                        
+
+                        ea[nCurIdx].nFirstPointer = 0;
+                        ea[nCurIdx].nLastPointer = 0;
+                        ea[nCurIdx].nMaxPointer = 0;
+                        ea[nCurIdx].nMinPointer = 0;
+
+                        if (ea[nCurIdx].nIdxPointer > BRUSH) // 추세 확인
+                        {
+
+
+                            fInclination = 0;
+                            fRecentInclination = 0;
+                            fRightInclination = 0;
+                            nInclinationCnt = 0;
+                            nRecentInclinationCnt = 0;
+                            nRightInclinationCnt = 0;
+                            fFluctuation = 0;
+                            fRecentFluctuation = 0;
+                            fRightFluctuation = 0;
+                            int nMarketGap = 0;
+
+                            if (ea[nCurIdx].nMarketGubun == KOSPI_ID)
+                            {
+                                nMarketGap = GetKospiGap(ea[nCurIdx].nFs);
+                            }
+                            else
+                            {
+                                nMarketGap = GetKosdaqGap(ea[nCurIdx].nFs);
+                            }
+
+
+                            //  추세 구하기
+                            for (int j = 0; j < nRandomi; j++)
+                            {
+                                nFlowIdx = rand.Next(ea[nCurIdx].nIdxPointer);
+                                fInclination += (ea[nCurIdx].nFs - ea[nCurIdx].arrRecord[nFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)ea[nCurIdx].arrRecord[nFlowIdx, 0]) / 60);
+                                nInclinationCnt++;
+
+
+                                if (ea[nCurIdx].nIdxPointer >= nRecentArea)
+                                {
+                                    nRecentFlowIdx = rand.Next(ea[nCurIdx].nIdxPointer - nRecentArea, ea[nCurIdx].nIdxPointer);
+                                }
+                                else
+                                    nRecentFlowIdx = rand.Next(ea[nCurIdx].nIdxPointer);
+                                fRecentInclination += (ea[nCurIdx].nFs - ea[nCurIdx].arrRecord[nRecentFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)ea[nCurIdx].arrRecord[nRecentFlowIdx, 0]) / 60);
+                                nRecentInclinationCnt++;
+
+                                if (ea[nCurIdx].nIdxPointer >= nRightArea)
+                                {
+                                    nRightFlowIdx = rand.Next(ea[nCurIdx].nIdxPointer - nRightArea, ea[nCurIdx].nIdxPointer);
+                                }
+                                else
+                                    nRightFlowIdx = rand.Next(ea[nCurIdx].nIdxPointer);
+                                fRightInclination += (ea[nCurIdx].nFs - ea[nCurIdx].arrRecord[nRightFlowIdx, 2]) / ((double)SubTimeToTimeAndSec(nSharedTime, (int)ea[nCurIdx].arrRecord[nRightFlowIdx, 0]) / 60);
+                                nRightInclinationCnt++;
+
+                            }
+
+                            fResultInclinationEvg = fInclination / nInclinationCnt; // 평균추세선
+                            fResultRecentInclinationEvg = fRecentInclination / nRecentInclinationCnt; // 근접추세선
+                            fResultRightInclinationEvg = fRightInclination / nRightInclinationCnt;
+                            fResultInitInclination = (ea[nCurIdx].nFs - ea[nCurIdx].nTodayStartPrice) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+                            fResultMaxInclination = (ea[nCurIdx].nFs - ea[nCurIdx].nMaxFs) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+                            fResultMinInclination = (ea[nCurIdx].nFs - ea[nCurIdx].nRealMinFs) / ((double)SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60);
+                            // 분산 구하기
+                            for (int k = 0; k < nRandomi; k++)
+                            {
+                                nFlowIdxDiff = rand.Next(ea[nCurIdx].nIdxPointer);
+                                fY = fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)ea[nCurIdx].arrRecord[nFlowIdxDiff, 0]) / 60) + ea[nCurIdx].nFs - fResultInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fFluctuation += Math.Pow((fY - ea[nCurIdx].arrRecord[nFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+
+
+                                if (ea[nCurIdx].nIdxPointer >= nRecentArea)
+                                {
+                                    nRecentFlowIdxDiff = rand.Next(ea[nCurIdx].nIdxPointer - nRecentArea, ea[nCurIdx].nIdxPointer);
+                                }
+                                else
+                                    nRecentFlowIdxDiff = rand.Next(ea[nCurIdx].nIdxPointer);
+                                fRecentY = fResultRecentInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)ea[nCurIdx].arrRecord[nRecentFlowIdxDiff, 0]) / 60) + ea[nCurIdx].nFs - fResultRecentInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fRecentFluctuation += Math.Pow((fRecentY - ea[nCurIdx].arrRecord[nRecentFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+
+                                if (ea[nCurIdx].nIdxPointer >= nRightArea)
+                                {
+                                    nRightFlowIdxDiff = rand.Next(ea[nCurIdx].nIdxPointer - nRightArea, ea[nCurIdx].nIdxPointer);
+                                }
+                                else
+                                    nRightFlowIdxDiff = rand.Next(ea[nCurIdx].nIdxPointer);
+                                fRightY = fResultRightInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, (int)ea[nCurIdx].arrRecord[nRightFlowIdxDiff, 0]) / 60) + ea[nCurIdx].nFs - fResultRightInclinationEvg * (SubTimeToTimeAndSec(nSharedTime, nFirstTime) / 60); // 기울기에 따른 linear 함수
+                                fRightFluctuation += Math.Pow((fRightY - ea[nCurIdx].arrRecord[nRightFlowIdxDiff, 2]) / nMarketGap, 2); // 변동폭
+
+                            }
+
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 5] = fResultInclinationEvg / nMarketGap;  // 평균추세
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 6] = fResultRecentInclinationEvg / nMarketGap; // 근접추세
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 7] = Math.Sqrt(fFluctuation); // 평균분산
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 8] = Math.Sqrt(fRecentFluctuation); // 근접분산
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 9] = fResultRightInclinationEvg / nMarketGap; // 초근접추세
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 10] = Math.Sqrt(fRightFluctuation); // 초근접분산
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 11] = fResultInitInclination / nMarketGap; // 초기추세
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 12] = GetAngleBetween(0, ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 11]); // 초기각도
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 13] = GetAngleBetween(0, ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 5]);  // 평균각도
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 14] = GetAngleBetween(0, ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 6]);  // 근접각도
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 15] = GetAngleBetween(0, ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 9]);  // 초근접각도
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 16] = GetAngleBetween(0, fResultMaxInclination / nMarketGap); // 최대값각도
+                            ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 17] = GetAngleBetween(0, fResultMinInclination / nMarketGap); // 최소값각도
+
+                        }
+
                     }
 
 
                     /// 전고점 테스트
                     /// @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-                    if ( !eachStockArray[nCurIdx].isGooiTime && 
-                        eachStockArray[nCurIdx].nMaxFs < eachStockArray[nCurIdx].nFs &&
-                        eachStockArray[nCurIdx].nMaxFs - eachStockArray[nCurIdx].nMinFs > eachStockArray[nCurIdx].nYesterdayEndPrice * 0.01 &&
-                        eachStockArray[nCurIdx].nMinTime > eachStockArray[nCurIdx].nMaxTime
+                    if (!ea[nCurIdx].isGooiTime &&
+                        ea[nCurIdx].nMaxFs < ea[nCurIdx].nFs &&
+                        ea[nCurIdx].nMaxFs - ea[nCurIdx].nMinFs > ea[nCurIdx].nYesterdayEndPrice * 0.01 &&
+                        ea[nCurIdx].nMinTime > ea[nCurIdx].nMaxTime
                         )
                     {
-                        eachStockArray[nCurIdx].isGooiTime = true;
-                        swLogFirstAndLast.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + SubTimeToTime(eachStockArray[nCurIdx].nMinTime, eachStockArray[nCurIdx].nMaxTime).ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMaxTime).ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMinTime).ToString() + "\t" + (eachStockArray[nCurIdx].nMaxFs - eachStockArray[nCurIdx].nMinFs).ToString() + "\t" + Math.Round((double)(eachStockArray[nCurIdx].nMaxFs - eachStockArray[nCurIdx].nMinFs) / eachStockArray[nCurIdx].nYesterdayEndPrice, nR).ToString() + "\t" +
-                        Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isGooiTime = true;
+                        swLogFirstAndLast.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + SubTimeToTime(ea[nCurIdx].nMinTime, ea[nCurIdx].nMaxTime).ToString() + "\t" + SubTimeToTime(nSharedTime, ea[nCurIdx].nMaxTime).ToString() + "\t" + SubTimeToTime(nSharedTime, ea[nCurIdx].nMinTime).ToString() + "\t" + (ea[nCurIdx].nMaxFs - ea[nCurIdx].nMinFs).ToString() + "\t" + Math.Round((double)(ea[nCurIdx].nMaxFs - ea[nCurIdx].nMinFs) / ea[nCurIdx].nYesterdayEndPrice, nR).ToString() + "\t" +
+                        Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
-                    if ( !eachStockArray[nCurIdx].isGooiTimeEverage && 
-                        eachStockArray[nCurIdx].nMaxEverageFs < eachStockArray[nCurIdx].nFs &&
-                        eachStockArray[nCurIdx].nMaxEverageFs - eachStockArray[nCurIdx].nMinEverageFs > eachStockArray[nCurIdx].nYesterdayEndPrice * 0.01 &&
-                        eachStockArray[nCurIdx].nMinEverageTime > eachStockArray[nCurIdx].nMaxEverageTime
+                    if (!ea[nCurIdx].isGooiTimeEverage &&
+                        ea[nCurIdx].nMaxEverageFs < ea[nCurIdx].nFs &&
+                        ea[nCurIdx].nMaxEverageFs - ea[nCurIdx].nMinEverageFs > ea[nCurIdx].nYesterdayEndPrice * 0.01 &&
+                        ea[nCurIdx].nMinEverageTime > ea[nCurIdx].nMaxEverageTime
                         )
                     {
-                        eachStockArray[nCurIdx].isGooiTimeEverage = true;
-                        swLogFirstAndLastEverage.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + SubTimeToTime(eachStockArray[nCurIdx].nMinEverageTime, eachStockArray[nCurIdx].nMaxEverageTime).ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMaxEverageTime).ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMinEverageTime).ToString() + "\t" + (eachStockArray[nCurIdx].nMaxEverageFs - eachStockArray[nCurIdx].nMinEverageFs).ToString() + "\t" + Math.Round((double)(eachStockArray[nCurIdx].nMaxEverageFs - eachStockArray[nCurIdx].nMinEverageFs) / eachStockArray[nCurIdx].nYesterdayEndPrice, nR).ToString() + "\t" +
-                        Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isGooiTimeEverage = true;
+                        swLogFirstAndLastEverage.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + SubTimeToTime(ea[nCurIdx].nMinEverageTime, ea[nCurIdx].nMaxEverageTime).ToString() + "\t" + SubTimeToTime(nSharedTime, ea[nCurIdx].nMaxEverageTime).ToString() + "\t" + SubTimeToTime(nSharedTime, ea[nCurIdx].nMinEverageTime).ToString() + "\t" + (ea[nCurIdx].nMaxEverageFs - ea[nCurIdx].nMinEverageFs).ToString() + "\t" + Math.Round((double)(ea[nCurIdx].nMaxEverageFs - ea[nCurIdx].nMinEverageFs) / ea[nCurIdx].nYesterdayEndPrice, nR).ToString() + "\t" +
+                        Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
 
                     }
-                    if ( !eachStockArray[nCurIdx].isGooiTimeEnd &&
-                        eachStockArray[nCurIdx].nMaxTopFs < eachStockArray[nCurIdx].nFs &&
-                        eachStockArray[nCurIdx].nMaxTopFs - eachStockArray[nCurIdx].nMinBottomFs > eachStockArray[nCurIdx].nYesterdayEndPrice * 0.01 &&
-                        eachStockArray[nCurIdx].nMinBottomTime > eachStockArray[nCurIdx].nMaxTopTime
+                    if (!ea[nCurIdx].isGooiTimeEnd &&
+                        ea[nCurIdx].nMaxTopFs < ea[nCurIdx].nFs &&
+                        ea[nCurIdx].nMaxTopFs - ea[nCurIdx].nMinBottomFs > ea[nCurIdx].nYesterdayEndPrice * 0.01 &&
+                        ea[nCurIdx].nMinBottomTime > ea[nCurIdx].nMaxTopTime
                         )
                     {
-                        eachStockArray[nCurIdx].isGooiTimeEnd = true;
-                        swLogTopAndBottom.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + SubTimeToTime(eachStockArray[nCurIdx].nMinBottomTime, eachStockArray[nCurIdx].nMaxTopTime).ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMaxTopTime).ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMinBottomTime).ToString() + "\t" + (eachStockArray[nCurIdx].nMaxTopFs - eachStockArray[nCurIdx].nMinBottomFs).ToString() + "\t" + Math.Round((double)(eachStockArray[nCurIdx].nMaxTopFs - eachStockArray[nCurIdx].nMinBottomFs) / eachStockArray[nCurIdx].nYesterdayEndPrice, nR).ToString() + "\t" +
-                        Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
-
-                    }
-
-                    if ( !eachStockArray[nCurIdx].isGooiTimeEndEverage &&
-                        eachStockArray[nCurIdx].nMaxTopEverageFs < eachStockArray[nCurIdx].nFs &&
-                        eachStockArray[nCurIdx].nMaxTopEverageFs - eachStockArray[nCurIdx].nMinBottomEverageFs > eachStockArray[nCurIdx].nYesterdayEndPrice * 0.01 &&
-                        eachStockArray[nCurIdx].nMinBottomEverageTime > eachStockArray[nCurIdx].nMaxTopEverageTime
-                        )
-                    {
-                        eachStockArray[nCurIdx].isGooiTimeEndEverage = true;
-                        swLogTopAndBottomEverage.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + SubTimeToTime(eachStockArray[nCurIdx].nMinBottomEverageTime, eachStockArray[nCurIdx].nMaxTopEverageTime).ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMaxTopEverageTime).ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMinBottomEverageTime).ToString() + "\t" + (eachStockArray[nCurIdx].nMaxTopEverageFs - eachStockArray[nCurIdx].nMinBottomEverageFs).ToString() + "\t" + Math.Round((double)(eachStockArray[nCurIdx].nMaxTopEverageFs - eachStockArray[nCurIdx].nMinBottomEverageFs) / eachStockArray[nCurIdx].nYesterdayEndPrice, nR).ToString() + "\t" +
-                        Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isGooiTimeEnd = true;
+                        swLogTopAndBottom.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + SubTimeToTime(ea[nCurIdx].nMinBottomTime, ea[nCurIdx].nMaxTopTime).ToString() + "\t" + SubTimeToTime(nSharedTime, ea[nCurIdx].nMaxTopTime).ToString() + "\t" + SubTimeToTime(nSharedTime, ea[nCurIdx].nMinBottomTime).ToString() + "\t" + (ea[nCurIdx].nMaxTopFs - ea[nCurIdx].nMinBottomFs).ToString() + "\t" + Math.Round((double)(ea[nCurIdx].nMaxTopFs - ea[nCurIdx].nMinBottomFs) / ea[nCurIdx].nYesterdayEndPrice, nR).ToString() + "\t" +
+                        Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
 
                     }
 
+                    if (!ea[nCurIdx].isGooiTimeEndEverage &&
+                        ea[nCurIdx].nMaxTopEverageFs < ea[nCurIdx].nFs &&
+                        ea[nCurIdx].nMaxTopEverageFs - ea[nCurIdx].nMinBottomEverageFs > ea[nCurIdx].nYesterdayEndPrice * 0.01 &&
+                        ea[nCurIdx].nMinBottomEverageTime > ea[nCurIdx].nMaxTopEverageTime
+                        )
+                    {
+                        ea[nCurIdx].isGooiTimeEndEverage = true;
+                        swLogTopAndBottomEverage.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + SubTimeToTime(ea[nCurIdx].nMinBottomEverageTime, ea[nCurIdx].nMaxTopEverageTime).ToString() + "\t" + SubTimeToTime(nSharedTime, ea[nCurIdx].nMaxTopEverageTime).ToString() + "\t" + SubTimeToTime(nSharedTime, ea[nCurIdx].nMinBottomEverageTime).ToString() + "\t" + (ea[nCurIdx].nMaxTopEverageFs - ea[nCurIdx].nMinBottomEverageFs).ToString() + "\t" + Math.Round((double)(ea[nCurIdx].nMaxTopEverageFs - ea[nCurIdx].nMinBottomEverageFs) / ea[nCurIdx].nYesterdayEndPrice, nR).ToString() + "\t" +
+                        Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
 
-                    
+                    }
+
+
+
                     //////////////////////////////////////////////////////////
                     /// 현재기록
-                    if (eachStockArray[nCurIdx].nFirstPointer == 0)
+                    if (ea[nCurIdx].nFirstPointer == 0)
                     {
-                        eachStockArray[nCurIdx].nFirstPointer = eachStockArray[nCurIdx].nFs;
-                        eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 1] = eachStockArray[nCurIdx].nFirstPointer;
+                        ea[nCurIdx].nFirstPointer = ea[nCurIdx].nFs;
+                        ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 1] = ea[nCurIdx].nFirstPointer;
                     }
 
-                    eachStockArray[nCurIdx].nLastPointer = eachStockArray[nCurIdx].nFs;
-                    eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 2] = eachStockArray[nCurIdx].nLastPointer;
+                    ea[nCurIdx].nLastPointer = ea[nCurIdx].nFs;
+                    ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 2] = ea[nCurIdx].nLastPointer;
 
-                    if (eachStockArray[nCurIdx].nMaxPointer == 0 || eachStockArray[nCurIdx].nMaxPointer < eachStockArray[nCurIdx].nFs)
+                    if (ea[nCurIdx].nMaxPointer == 0 || ea[nCurIdx].nMaxPointer < ea[nCurIdx].nFs)
                     {
-                        eachStockArray[nCurIdx].nMaxPointer = eachStockArray[nCurIdx].nFs;
-                        eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 3] = eachStockArray[nCurIdx].nMaxPointer;
+                        ea[nCurIdx].nMaxPointer = ea[nCurIdx].nFs;
+                        ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 3] = ea[nCurIdx].nMaxPointer;
                     }
 
-                    if (eachStockArray[nCurIdx].nMinPointer == 0 || eachStockArray[nCurIdx].nMinPointer > eachStockArray[nCurIdx].nFs)
+                    if (ea[nCurIdx].nMinPointer == 0 || ea[nCurIdx].nMinPointer > ea[nCurIdx].nFs)
                     {
-                        eachStockArray[nCurIdx].nMinPointer = eachStockArray[nCurIdx].nFs;
-                        eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 4] = eachStockArray[nCurIdx].nMinPointer;
+                        ea[nCurIdx].nMinPointer = ea[nCurIdx].nFs;
+                        ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 4] = ea[nCurIdx].nMinPointer;
                     }
 
-                    eachStockArray[nCurIdx].nFsPointer = eachStockArray[nCurIdx].nFs;
+                    ea[nCurIdx].nFsPointer = ea[nCurIdx].nFs;
                     /// END  -- 현재기록 
                     /////////////////////////////////////////////////////////////
 
@@ -2267,16 +2211,16 @@ namespace MJTradier
                     //////////////////////////////////////////////////
                     /////////////////////////////////////////////////////
                     int nTimeDiff = SubTimeToTimeAndSec(nSharedTime, nFirstTime);
-                    eachStockArray[nCurIdx].fCntPerTime = (double)eachStockArray[nCurIdx].nCnt / (nTimeDiff + 10);
+                    ea[nCurIdx].fCntPerTime = (double)ea[nCurIdx].nCnt / (nTimeDiff + 10);
 
-                    if (eachStockArray[nCurIdx].fMaxPowerWithoutGap == 0 || eachStockArray[nCurIdx].fMaxPowerWithoutGap < eachStockArray[nCurIdx].fPowerWithoutGap)
+                    if (ea[nCurIdx].fMaxPowerWithoutGap == 0 || ea[nCurIdx].fMaxPowerWithoutGap < ea[nCurIdx].fPowerWithoutGap)
                     {
-                        eachStockArray[nCurIdx].fMaxPowerWithoutGap = eachStockArray[nCurIdx].fPowerWithoutGap;
+                        ea[nCurIdx].fMaxPowerWithoutGap = ea[nCurIdx].fPowerWithoutGap;
                     }
 
-                    if (eachStockArray[nCurIdx].fMinPowerWithoutGap == 0 || eachStockArray[nCurIdx].fMinPowerWithoutGap > eachStockArray[nCurIdx].fPowerWithoutGap)
+                    if (ea[nCurIdx].fMinPowerWithoutGap == 0 || ea[nCurIdx].fMinPowerWithoutGap > ea[nCurIdx].fPowerWithoutGap)
                     {
-                        eachStockArray[nCurIdx].fMinPowerWithoutGap = eachStockArray[nCurIdx].fPowerWithoutGap;
+                        ea[nCurIdx].fMinPowerWithoutGap = ea[nCurIdx].fPowerWithoutGap;
                     }
 
 
@@ -2286,212 +2230,212 @@ namespace MJTradier
 
 
 
-                    if (!eachStockArray[nCurIdx].isOneToTenSucceed && eachStockArray[nCurIdx].fCurTradeAmountRatioOnlyUp >= 0.1)
+                    if (!ea[nCurIdx].isOneToTenSucceed && ea[nCurIdx].fCurTradeAmountRatioOnlyUp >= 0.1)
                     {
-                        eachStockArray[nCurIdx].isOneToTenSucceed = true;
-                        swLogOneToTenSucceed.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isOneToTenSucceed = true;
+                        swLogOneToTenSucceed.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
-                    if (!eachStockArray[nCurIdx].isQuarterSucceed && eachStockArray[nCurIdx].fCurTradeAmountRatioOnlyUp >= 0.25)
+                    if (!ea[nCurIdx].isQuarterSucceed && ea[nCurIdx].fCurTradeAmountRatioOnlyUp >= 0.25)
                     {
-                        eachStockArray[nCurIdx].isQuarterSucceed = true;
-                        swLogQuarterSucceed.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isQuarterSucceed = true;
+                        swLogQuarterSucceed.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
-                    if (!eachStockArray[nCurIdx].isHalfSucceed && eachStockArray[nCurIdx].fCurTradeAmountRatioOnlyUp >= 0.5)
+                    if (!ea[nCurIdx].isHalfSucceed && ea[nCurIdx].fCurTradeAmountRatioOnlyUp >= 0.5)
                     {
-                        eachStockArray[nCurIdx].isHalfSucceed = true;
-                        swLogHalfSucceed.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isHalfSucceed = true;
+                        swLogHalfSucceed.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
-                    if (!eachStockArray[nCurIdx].isFullSucceed && eachStockArray[nCurIdx].fCurTradeAmountRatioOnlyUp >= 1)
+                    if (!ea[nCurIdx].isFullSucceed && ea[nCurIdx].fCurTradeAmountRatioOnlyUp >= 1)
                     {
-                        eachStockArray[nCurIdx].isFullSucceed = true;
-                        swLogFullSucceed.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isFullSucceed = true;
+                        swLogFullSucceed.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
-                    if (!eachStockArray[nCurIdx].isHalfFullSucceed && eachStockArray[nCurIdx].fCurTradeAmountRatioOnlyUp >= 1.5)
+                    if (!ea[nCurIdx].isHalfFullSucceed && ea[nCurIdx].fCurTradeAmountRatioOnlyUp >= 1.5)
                     {
-                        eachStockArray[nCurIdx].isHalfFullSucceed = true;
-                        swLogHalfFullSucceed.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isHalfFullSucceed = true;
+                        swLogHalfFullSucceed.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
-                    if (!eachStockArray[nCurIdx].isDoubleSucceed && eachStockArray[nCurIdx].fCurTradeAmountRatioOnlyUp >= 2)
+                    if (!ea[nCurIdx].isDoubleSucceed && ea[nCurIdx].fCurTradeAmountRatioOnlyUp >= 2)
                     {
-                        eachStockArray[nCurIdx].isDoubleSucceed = true;
-                        swLogDoubleSucceed.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].isDoubleSucceed = true;
+                        swLogDoubleSucceed.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerLongJar >= 5)
+                    if (ea[nCurIdx].fPowerLongJar >= 5)
                     {
-                        swLogLongPower5.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogLongPower5.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerJar >= 1)
+                    if (ea[nCurIdx].fPowerJar >= 1)
                     {
-                        swLogPower1.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogPower1.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerJar >= 5)
+                    if (ea[nCurIdx].fPowerJar >= 5)
                     {
-                        swLogPower5.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogPower5.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerJar <= -2)
+                    if (ea[nCurIdx].fPowerJar <= -2)
                     {
-                        swLogPowerM2.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogPowerM2.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerJar <= -5)
+                    if (ea[nCurIdx].fPowerJar <= -5)
                     {
-                        swLogPowerM5.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogPowerM5.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
-                    if (eachStockArray[nCurIdx].fPowerJar >= 2)
+                    if (ea[nCurIdx].fPowerJar >= 2)
                     {
-                        swLogPower2.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
-                        eachStockArray[nCurIdx].nUpgradeTime = nSharedTime;
+                        swLogPower2.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nUpgradeTime = nSharedTime;
                     }
 
 
                     // 속도 관련
-                    if (eachStockArray[nCurIdx].fCurSpeed >= 10)
+                    if (ea[nCurIdx].fCurSpeed >= 10)
                     {
-                        eachStockArray[nCurIdx].nSpeed10Time = nSharedTime;
-                        swLogSpeed10.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nSpeed10Time = nSharedTime;
+                        swLogSpeed10.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fCurSpeed >= 20)
+                    if (ea[nCurIdx].fCurSpeed >= 20)
                     {
-                        eachStockArray[nCurIdx].nSpeed20Time = nSharedTime;
-                        swLogSpeed20.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nSpeed20Time = nSharedTime;
+                        swLogSpeed20.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fCurSpeed >= 30)
+                    if (ea[nCurIdx].fCurSpeed >= 30)
                     {
-                        eachStockArray[nCurIdx].nSpeed30Time = nSharedTime;
-                        swLogSpeed30.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nSpeed30Time = nSharedTime;
+                        swLogSpeed30.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fCurSpeed >= 40)
+                    if (ea[nCurIdx].fCurSpeed >= 40)
                     {
-                        eachStockArray[nCurIdx].nSpeed40Time = nSharedTime;
-                        swLogSpeed40.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nSpeed40Time = nSharedTime;
+                        swLogSpeed40.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
                     // 호가비율
-                    if (eachStockArray[nCurIdx].fHogaRatioVal >= 0.6)
+                    if (ea[nCurIdx].fHogaRatioVal >= 0.6)
                     {
-                        eachStockArray[nCurIdx].nHogaRatio6Time = nSharedTime;
-                        swLogHogaRatio60.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nHogaRatio6Time = nSharedTime;
+                        swLogHogaRatio60.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fHogaRatioVal >= 0.7)
+                    if (ea[nCurIdx].fHogaRatioVal >= 0.7)
                     {
-                        eachStockArray[nCurIdx].nHogaRatio7Time = nSharedTime;
-                        swLogHogaRatio70.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nHogaRatio7Time = nSharedTime;
+                        swLogHogaRatio70.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fHogaRatioVal >= 0.8)
+                    if (ea[nCurIdx].fHogaRatioVal >= 0.8)
                     {
-                        eachStockArray[nCurIdx].nHogaRatio8Time = nSharedTime;
-                        swLogHogaRatio80.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nHogaRatio8Time = nSharedTime;
+                        swLogHogaRatio80.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fHogaRatioVal >= 0.9)
+                    if (ea[nCurIdx].fHogaRatioVal >= 0.9)
                     {
-                        eachStockArray[nCurIdx].nHogaRatio9Time = nSharedTime;
-                        swLogHogaRatio90.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nHogaRatio9Time = nSharedTime;
+                        swLogHogaRatio90.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
                     // 호가량
-                    if (eachStockArray[nCurIdx].fSharePerHoga <= 100)
+                    if (ea[nCurIdx].fSharePerHoga <= 100)
                     {
-                        eachStockArray[nCurIdx].nHogaVolume100Time = nSharedTime;
-                        swLogHogaVolume100.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nHogaVolume100Time = nSharedTime;
+                        swLogHogaVolume100.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fSharePerHoga <= 80)
+                    if (ea[nCurIdx].fSharePerHoga <= 80)
                     {
-                        eachStockArray[nCurIdx].nHogaVolume80Time = nSharedTime;
-                        swLogHogaVolume80.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nHogaVolume80Time = nSharedTime;
+                        swLogHogaVolume80.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fSharePerHoga <= 60)
+                    if (ea[nCurIdx].fSharePerHoga <= 60)
                     {
-                        eachStockArray[nCurIdx].nHogaVolume60Time = nSharedTime;
-                        swLogHogaVolume60.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nHogaVolume60Time = nSharedTime;
+                        swLogHogaVolume60.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fSharePerHoga <= 40)
+                    if (ea[nCurIdx].fSharePerHoga <= 40)
                     {
-                        eachStockArray[nCurIdx].nHogaVolume40Time = nSharedTime;
-                        swLogHogaVolume40.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nHogaVolume40Time = nSharedTime;
+                        swLogHogaVolume40.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
                     // 체결량
-                    if ((eachStockArray[nCurIdx].fSharePerHoga * eachStockArray[nCurIdx].fHogaPerTrade) <= 200)
+                    if ((ea[nCurIdx].fSharePerHoga * ea[nCurIdx].fHogaPerTrade) <= 200)
                     {
-                        eachStockArray[nCurIdx].nTrade200Time = nSharedTime;
-                        swLogTradeVolume200.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nTrade200Time = nSharedTime;
+                        swLogTradeVolume200.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if ((eachStockArray[nCurIdx].fSharePerHoga * eachStockArray[nCurIdx].fHogaPerTrade) <= 150)
+                    if ((ea[nCurIdx].fSharePerHoga * ea[nCurIdx].fHogaPerTrade) <= 150)
                     {
-                        eachStockArray[nCurIdx].nTrade150Time = nSharedTime;
-                        swLogTradeVolume150.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nTrade150Time = nSharedTime;
+                        swLogTradeVolume150.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if ((eachStockArray[nCurIdx].fSharePerHoga * eachStockArray[nCurIdx].fHogaPerTrade) <= 100)
+                    if ((ea[nCurIdx].fSharePerHoga * ea[nCurIdx].fHogaPerTrade) <= 100)
                     {
-                        eachStockArray[nCurIdx].nTrade100Time = nSharedTime;
-                        swLogTradeVolume100.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nTrade100Time = nSharedTime;
+                        swLogTradeVolume100.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if ((eachStockArray[nCurIdx].fSharePerHoga * eachStockArray[nCurIdx].fHogaPerTrade) <= 70)
+                    if ((ea[nCurIdx].fSharePerHoga * ea[nCurIdx].fHogaPerTrade) <= 70)
                     {
-                        eachStockArray[nCurIdx].nTrade70Time = nSharedTime;
-                        swLogTradeVolume70.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nTrade70Time = nSharedTime;
+                        swLogTradeVolume70.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
                     // 가격변동
-                    if (eachStockArray[nCurIdx].fPowerLongJar >= 1.5)
+                    if (ea[nCurIdx].fPowerLongJar >= 1.5)
                     {
-                        eachStockArray[nCurIdx].nPower15Time = nSharedTime;
-                        swLogPowerLong15.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nPower15Time = nSharedTime;
+                        swLogPowerLong15.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerLongJar >= 3)
+                    if (ea[nCurIdx].fPowerLongJar >= 3)
                     {
-                        eachStockArray[nCurIdx].nPower30Time = nSharedTime;
-                        swLogPowerLong30.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nPower30Time = nSharedTime;
+                        swLogPowerLong30.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerLongJar >= 4.5)
+                    if (ea[nCurIdx].fPowerLongJar >= 4.5)
                     {
-                        eachStockArray[nCurIdx].nPower45Time = nSharedTime;
-                        swLogPowerLong45.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nPower45Time = nSharedTime;
+                        swLogPowerLong45.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerLongJar >= 6)
+                    if (ea[nCurIdx].fPowerLongJar >= 6)
                     {
-                        eachStockArray[nCurIdx].nPower60Time = nSharedTime;
-                        swLogPowerLong60.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
-                    }
-
-
-                    if (eachStockArray[nCurIdx].fPowerOnlyUp >= 2)
-                    {
-                        swLogOnlyUp2.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
-                    }
-                    if (eachStockArray[nCurIdx].fPowerOnlyUp >= 4)
-                    {
-                        swLogOnlyUp4.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
-                    }
-                    if (eachStockArray[nCurIdx].fPowerOnlyUp >= 6)
-                    {
-                        swLogOnlyUp6.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
-                    }
-                    if (eachStockArray[nCurIdx].fPowerOnlyUp >= 8)
-                    {
-                        swLogOnlyUp8.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        ea[nCurIdx].nPower60Time = nSharedTime;
+                        swLogPowerLong60.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
-                    if (eachStockArray[nCurIdx].fPowerOnlyDown <= -2)
+
+                    if (ea[nCurIdx].fPowerOnlyUp >= 2)
                     {
-                        swLogOnlyDown2.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogOnlyUp2.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerOnlyDown <= -4)
+                    if (ea[nCurIdx].fPowerOnlyUp >= 4)
                     {
-                        swLogOnlyDown4.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogOnlyUp4.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerOnlyDown <= -6)
+                    if (ea[nCurIdx].fPowerOnlyUp >= 6)
                     {
-                        swLogOnlyDown6.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogOnlyUp6.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
-                    if (eachStockArray[nCurIdx].fPowerOnlyDown <= -8)
+                    if (ea[nCurIdx].fPowerOnlyUp >= 8)
                     {
-                        swLogOnlyDown8.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogOnlyUp8.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
+                    }
+
+                    if (ea[nCurIdx].fPowerOnlyDown <= -2)
+                    {
+                        swLogOnlyDown2.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
+                    }
+                    if (ea[nCurIdx].fPowerOnlyDown <= -4)
+                    {
+                        swLogOnlyDown4.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
+                    }
+                    if (ea[nCurIdx].fPowerOnlyDown <= -6)
+                    {
+                        swLogOnlyDown6.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
+                    }
+                    if (ea[nCurIdx].fPowerOnlyDown <= -8)
+                    {
+                        swLogOnlyDown8.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
 
@@ -2506,73 +2450,73 @@ namespace MJTradier
 
                     int nLimitTime = SubTimeBySec(nSharedTime, 600);
 
-                    if (eachStockArray[nCurIdx].nSpeed10Time > nLimitTime)
+                    if (ea[nCurIdx].nSpeed10Time > nLimitTime)
                         nSpeedPart++;
-                    if (eachStockArray[nCurIdx].nSpeed20Time > nLimitTime)
+                    if (ea[nCurIdx].nSpeed20Time > nLimitTime)
                         nSpeedPart++;
-                    if (eachStockArray[nCurIdx].nSpeed30Time > nLimitTime)
+                    if (ea[nCurIdx].nSpeed30Time > nLimitTime)
                         nSpeedPart++;
-                    if (eachStockArray[nCurIdx].nSpeed40Time > nLimitTime)
+                    if (ea[nCurIdx].nSpeed40Time > nLimitTime)
                         nSpeedPart++;
 
-                    if (eachStockArray[nCurIdx].nHogaVolume100Time > nLimitTime)
+                    if (ea[nCurIdx].nHogaVolume100Time > nLimitTime)
                         nHogaVolumePart++;
-                    if (eachStockArray[nCurIdx].nHogaVolume80Time > nLimitTime)
+                    if (ea[nCurIdx].nHogaVolume80Time > nLimitTime)
                         nHogaVolumePart++;
-                    if (eachStockArray[nCurIdx].nHogaVolume60Time > nLimitTime)
+                    if (ea[nCurIdx].nHogaVolume60Time > nLimitTime)
                         nHogaVolumePart++;
-                    if (eachStockArray[nCurIdx].nHogaVolume40Time > nLimitTime)
+                    if (ea[nCurIdx].nHogaVolume40Time > nLimitTime)
                         nHogaVolumePart++;
 
-                    if (eachStockArray[nCurIdx].nHogaRatio6Time > nLimitTime)
+                    if (ea[nCurIdx].nHogaRatio6Time > nLimitTime)
                         nHogaRatioPart++;
-                    if (eachStockArray[nCurIdx].nHogaRatio7Time > nLimitTime)
+                    if (ea[nCurIdx].nHogaRatio7Time > nLimitTime)
                         nHogaRatioPart++;
-                    if (eachStockArray[nCurIdx].nHogaRatio8Time > nLimitTime)
+                    if (ea[nCurIdx].nHogaRatio8Time > nLimitTime)
                         nHogaRatioPart++;
-                    if (eachStockArray[nCurIdx].nHogaRatio9Time > nLimitTime)
+                    if (ea[nCurIdx].nHogaRatio9Time > nLimitTime)
                         nHogaRatioPart++;
 
-                    if (eachStockArray[nCurIdx].nTrade200Time > nLimitTime)
+                    if (ea[nCurIdx].nTrade200Time > nLimitTime)
                         nTradePart++;
-                    if (eachStockArray[nCurIdx].nTrade150Time > nLimitTime)
+                    if (ea[nCurIdx].nTrade150Time > nLimitTime)
                         nTradePart++;
-                    if (eachStockArray[nCurIdx].nTrade100Time > nLimitTime)
+                    if (ea[nCurIdx].nTrade100Time > nLimitTime)
                         nTradePart++;
-                    if (eachStockArray[nCurIdx].nTrade70Time > nLimitTime)
+                    if (ea[nCurIdx].nTrade70Time > nLimitTime)
                         nTradePart++;
 
-                    if (eachStockArray[nCurIdx].nPower15Time > nLimitTime)
+                    if (ea[nCurIdx].nPower15Time > nLimitTime)
                         nPowerPart++;
-                    if (eachStockArray[nCurIdx].nPower30Time > nLimitTime)
+                    if (ea[nCurIdx].nPower30Time > nLimitTime)
                         nPowerPart++;
-                    if (eachStockArray[nCurIdx].nPower45Time > nLimitTime)
+                    if (ea[nCurIdx].nPower45Time > nLimitTime)
                         nPowerPart++;
-                    if (eachStockArray[nCurIdx].nPower60Time > nLimitTime)
+                    if (ea[nCurIdx].nPower60Time > nLimitTime)
                         nPowerPart++;
 
                     nCheckCount = nSpeedPart + nHogaVolumePart + nHogaRatioPart + nTradePart + nPowerPart;
 
                     if (nCheckCount >= 5)
                     {
-                        swLogTotalCheck5.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogTotalCheck5.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
                     if (nCheckCount >= 7)
                     {
-                        swLogTotalCheck7.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogTotalCheck7.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
 
                     }
 
                     if (nCheckCount >= 10)
                     {
-                        swLogTotalCheck10.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogTotalCheck10.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
 
                     }
 
                     if (nCheckCount >= 15)
                     {
-                        swLogTotalCheck15.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogTotalCheck15.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
 
                     }
 
@@ -2582,32 +2526,32 @@ namespace MJTradier
 
 
 
-                  
 
-                    if (eachStockArray[nCurIdx].fScoreVolume > 70)
+
+                    if (ea[nCurIdx].fScoreVolume > 70)
                     {
-                        if (eachStockArray[nCurIdx].fPurePerTrade > 0 && eachStockArray[nCurIdx].fHogaRatioVal > 0)
+                        if (ea[nCurIdx].fPurePerTrade > 0 && ea[nCurIdx].fHogaRatioVal > 0)
                         {
-                            swLogVolume70.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                            swLogVolume70.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                         }
                     }
 
-                    if (eachStockArray[nCurIdx].fScoreVolume > 80)
+                    if (ea[nCurIdx].fScoreVolume > 80)
                     {
-                        swLogVolume80.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString());
+                        swLogVolume80.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString());
                     }
 
 
 
-                    if(eachStockArray[nCurIdx].nMarketGubun == KOSPI_ID)
+                    if (ea[nCurIdx].nMarketGubun == KOSPI_ID)
                     {
-                        eachStockArray[nCurIdx].swLog.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 5], nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6], nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fZeroBasedAngleDirection, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fAngleDirection, nR).ToString() + "\t" +  Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 7], nR).ToString() + "\t" + eachStockArray[nCurIdx].nMaxFs.ToString() + "\t" + Math.Round(((double)(eachStockArray[nCurIdx].nMaxFs - eachStockArray[nCurIdx].nFs) / eachStockArray[nCurIdx].nYesterdayEndPrice) * 100,nR).ToString() + "\t" + eachStockArray[nCurIdx].nMaxTime.ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMaxTime).ToString());
+                        ea[nCurIdx].swLog.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString() + "\t" + "KOSPI\t" +  nSharedTime.ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 5], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 11], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 6], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 9], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 7], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 8], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 10], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 13], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 12], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 14], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 15], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 16], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 17], nR).ToString());
                     }
                     else
                     {
-                        eachStockArray[nCurIdx].swLog.WriteLine(nSharedTime.ToString() + "\t" + eachStockArray[nCurIdx].sCode + "\t" + eachStockArray[nCurIdx].sCodeName + "\t" + Math.Round(eachStockArray[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + eachStockArray[nCurIdx].nFs.ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fPower, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 5], nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 6], nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fZeroBasedAngleDirection, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].fAngleDirection, nR).ToString() + "\t" + Math.Round(eachStockArray[nCurIdx].arrRecord[eachStockArray[nCurIdx].nIdxPointer, 7], nR).ToString() + "\t" + eachStockArray[nCurIdx].nMaxFs.ToString() + "\t" + Math.Round(((double)(eachStockArray[nCurIdx].nMaxFs - eachStockArray[nCurIdx].nFs) / eachStockArray[nCurIdx].nYesterdayEndPrice) * 100, nR).ToString()  + "\t" + eachStockArray[nCurIdx].nMaxTime.ToString() + "\t" + SubTimeToTime(nSharedTime, eachStockArray[nCurIdx].nMaxTime).ToString());
+                        ea[nCurIdx].swLog.WriteLine(nSharedTime.ToString() + "\t" + ea[nCurIdx].sCode + "\t" + ea[nCurIdx].sCodeName + "\t" + Math.Round(ea[nCurIdx].fCurSpeed, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fCntPerTime, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPurePerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaRatioVal, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fHogaPerTrade, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fSharePerHoga, nR).ToString() + "\t" + ea[nCurIdx].nFs.ToString() + "\t" + Math.Round(ea[nCurIdx].fStartGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerJar, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyUp, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerOnlyDown, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPowerWithoutGap, nR).ToString() + "\t" + Math.Round(ea[nCurIdx].fPower, nR).ToString() + "\t" + "KOSDAQ\t" + nSharedTime.ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 5], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 11], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 6], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 9], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 7], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 8], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 10], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 13], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 12], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 14], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 15], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 16], nR).ToString() + "\t" + Math.Round(ea[nCurIdx].arrRecord[ea[nCurIdx].nIdxPointer, 17], nR).ToString());
                     }
-                    
+
 
 
 
@@ -2617,22 +2561,22 @@ namespace MJTradier
 
                     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
                     // 현재 거래중이고(nBuyReqCnt > 0) 현재 매수취소가 가능한 상태라면 접근 가능
-                    if (eachStockArray[nCurIdx].isOrderStatus)
+                    if (ea[nCurIdx].isOrderStatus)
                     {
-                        if ((eachStockArray[nCurIdx].nBuyReqCnt > 0) && !eachStockArray[nCurIdx].isCancelMode) // 미체결량이 남아있다면
+                        if ((ea[nCurIdx].nBuyReqCnt > 0) && !ea[nCurIdx].isCancelMode) // 미체결량이 남아있다면
                         {
                             // 현재 최우선매도호가가 지정상한가를 넘었거나 매매 요청시간과 현재시간이 너무 오래 차이난다면(= 매수가 너무 오래걸린다 = 거래량이 낮고 머 별거 없다)
-                            if ((eachStockArray[nCurIdx].nFs > eachStockArray[nCurIdx].nCurLimitPrice) || (SubTimeToTimeAndSec(nSharedTime, eachStockArray[nCurIdx].nCurRqTime) >= MAX_REQ_SEC)) // 지정가를 초과하거나 오래걸린다면
+                            if ((ea[nCurIdx].nFs > ea[nCurIdx].nCurLimitPrice) || (SubTimeToTimeAndSec(nSharedTime, ea[nCurIdx].nCurRqTime) >= MAX_REQ_SEC)) // 지정가를 초과하거나 오래걸린다면
                             {
                                 curSlot.sRQName = "매수취소";
                                 curSlot.nOrderType = 3; // 매수취소
                                 curSlot.sCode = sCode;
-                                curSlot.sOrgOrderId = eachStockArray[nCurIdx].sCurOrgOrderId; // 현재 매수의 원주문번호를 넣어준다.
+                                curSlot.sOrgOrderId = ea[nCurIdx].sCurOrgOrderId; // 현재 매수의 원주문번호를 넣어준다.
                                 curSlot.nRqTime = nSharedTime; // 현재시간설정
 
                                 tradeQueue.Enqueue(curSlot); // 매매신청큐에 인큐
 
-                                eachStockArray[nCurIdx].isCancelMode = true; // 현재 매수취소 불가능상태로 만든다
+                                ea[nCurIdx].isCancelMode = true; // 현재 매수취소 불가능상태로 만든다
                                 testTextBox.AppendText(nSharedTime.ToString() + " : " + sCode + " 매수취소신청 \r\n"); //++
                             }
                         }
@@ -2655,7 +2599,7 @@ namespace MJTradier
                                 bool isSell = false;
 
                                 nBuyPrice = buySlotArray[nCurIdx, checkSellIterIdx].nBuyPrice; // 처음 초기화됐을때는 0인데 체결이 된 상태에서만 접근 가능하니 사졌을 때의 평균매입가
-                                fYield = (eachStockArray[nCurIdx].nFb - nBuyPrice) / nBuyPrice; // 현재 최우선매수호가 와의 손익률을 구한다
+                                fYield = (ea[nCurIdx].nFb - nBuyPrice) / nBuyPrice; // 현재 최우선매수호가 와의 손익률을 구한다
                                 fYield -= STOCK_TAX + STOCK_FEE + STOCK_FEE; // 거래세와 거래수수료 차감
 
                                 if (fYield >= buySlotArray[nCurIdx, checkSellIterIdx].fTargetPer) // 손익률이 익절퍼센트를 넘기면
@@ -2716,7 +2660,7 @@ namespace MJTradier
                     isMarketStart = true;
                     nFirstTime = int.Parse(sTime);
                     nFirstTime -= nFirstTime % 10000;
-                    
+
                     nTenTime = AddTimeBySec(nFirstTime, 3600);
                     RequestHoldings(0); // 장시작하고 잔여종목 전량매도
                 }
@@ -2802,11 +2746,13 @@ namespace MJTradier
                         swLogOnlyDown6.Close();
                         swLogOnlyDown8.Close();
 
-                        swLogMarketSituSec.Close();
-                        swLogMarketSituMin.Close();
-                        for (int closeIdx =0; closeIdx < nEachStockIdx; closeIdx++)
+                        swLogMarketSituSecKospi.Close();
+                        swLogMarketSituSecKosdaq.Close();
+                        swLogMarketSituMinKospi.Close();
+                        swLogMarketSituMinKosdaq.Close();
+                        for (int closeIdx = 0; closeIdx < nEachStockIdx; closeIdx++)
                         {
-                            eachStockArray[closeIdx].swLog.Close();
+                            ea[closeIdx].swLog.Close();
                         }
                     }
                 }
@@ -2873,16 +2819,16 @@ namespace MJTradier
                         catch (Exception ex)
                         {
                             // 혹시 문자열이 ""이라면 매수체결시 받아지는 체결 메시지다.
-                            eachStockArray[nCurIdx].isCancelComplete = false; // 매수취소완료버튼 초기화
-                            eachStockArray[nCurIdx].isCancelMode = false; // 해당종목의 현재매수취소버튼 초기화
+                            ea[nCurIdx].isCancelComplete = false; // 매수취소완료버튼 초기화
+                            ea[nCurIdx].isCancelMode = false; // 해당종목의 현재매수취소버튼 초기화
                             buySlotArray[nCurIdx, nCurBuySlotIdx].isAllBuyed = true; // 해당종목의 매수레코드의 매수완료 on
                             buySlotCntArray[nCurIdx]++; // 매수레코드 수 증가
-                            eachStockArray[nCurIdx].nBuyReqCnt--; // 매수요청 카운트 감소
-                            eachStockArray[nCurIdx].isOrderStatus = false; // 매매중 off
+                            ea[nCurIdx].nBuyReqCnt--; // 매수요청 카운트 감소
+                            ea[nCurIdx].isOrderStatus = false; // 매매중 off
                             return;
                         }
                         // 예수금에 지정상한가와 매입금액과의 차이만큼을 다시 복구시켜준다.
-                        nCurDepositCalc += (eachStockArray[nCurIdx].nCurLimitPrice - nCurOkTradePrice) * nCurOkTradeVolume; // 예수금에 (추정매수가 - 실매수가) * 실매수량 더해준다. //**
+                        nCurDepositCalc += (ea[nCurIdx].nCurLimitPrice - nCurOkTradePrice) * nCurOkTradeVolume; // 예수금에 (추정매수가 - 실매수가) * 실매수량 더해준다. //**
 
                         // 이것은 현재매수 구간이기 떄문에
                         // 해당레코드의 평균매입가와 매수수량을 조정하기 위한 과정이다
@@ -2897,11 +2843,11 @@ namespace MJTradier
                             // 체결-매수취소와 유사하게 진행된다 하나 다른점은 매수취소완료 시그널을 건들 필요가 없다는 것이다.
                             // 현재매수취소 그리고 일부라도 체결됐으니 해당레코드에 구매됐다는 시그널을 on해주고 레코드인덱스를 한칸 늘린다
                             // 매수요청 카운트도 낮추고 현재 매매중인 시그널을 off해준다.
-                            eachStockArray[nCurIdx].isCancelMode = false; // 매수취소를 했어도 취소접수가 안되면 그대로 전량체결이 되니까 이때 cancelMode를 false한다.
+                            ea[nCurIdx].isCancelMode = false; // 매수취소를 했어도 취소접수가 안되면 그대로 전량체결이 되니까 이때 cancelMode를 false한다.
                             buySlotArray[nCurIdx, nCurBuySlotIdx].isAllBuyed = true; // 해당종목의 매수레코드의 매수완료 on
                             buySlotCntArray[nCurIdx]++; // 매수레코드 수 증가
-                            eachStockArray[nCurIdx].nBuyReqCnt--; // 매수요청 카운트 감소
-                            eachStockArray[nCurIdx].isOrderStatus = false; // 매매중 off
+                            ea[nCurIdx].nBuyReqCnt--; // 매수요청 카운트 감소
+                            ea[nCurIdx].isOrderStatus = false; // 매매중 off
 
                             testTextBox.AppendText(sTradeTime + " : " + sCode + " 매수 체결완료 \r\n"); //++
                         }
@@ -2916,19 +2862,19 @@ namespace MJTradier
                             // 많은 설정을 할 필요가 없다
                             // 여기서는 isAllBuyed와 현재레코드인덱스를 더하지 않는 이유는 체결데이터가 없기때문에
                             // 굳이 인덱스를 늘려 레코드만 증가시킨다면 실시간에서 관리함에 시간이 더 소요되기 때문이다
-                            eachStockArray[nCurIdx].isCancelComplete = false; // 매수취소완료버튼 초기화
-                            eachStockArray[nCurIdx].isCancelMode = false; // 해당종목의 현재매수취소버튼 초기화
-                            eachStockArray[nCurIdx].nBuyReqCnt--; // 매수요청 카운트 감소
-                            eachStockArray[nCurIdx].isOrderStatus = false; // 매매중 off
+                            ea[nCurIdx].isCancelComplete = false; // 매수취소완료버튼 초기화
+                            ea[nCurIdx].isCancelMode = false; // 해당종목의 현재매수취소버튼 초기화
+                            ea[nCurIdx].nBuyReqCnt--; // 매수요청 카운트 감소
+                            ea[nCurIdx].isOrderStatus = false; // 매매중 off
                         }
                         else // 매수 주문인경우
                         {
                             // 원주문번호만 설정해준다.
 
-                            eachStockArray[nCurIdx].sCurOrgOrderId = sOrderId; // 현재원주문번호 설정
-                            eachStockArray[nCurIdx].isOrderStatus = true; // 매매중 on
+                            ea[nCurIdx].sCurOrgOrderId = sOrderId; // 현재원주문번호 설정
+                            ea[nCurIdx].isOrderStatus = true; // 매매중 on
 
-                            nCurDepositCalc -= (int)(nOrderVolume * eachStockArray[nCurIdx].nCurLimitPrice * (1 + VIRTUAL_STOCK_FEE)); // 예수금에서 매매수수료까지 포함해서 차감
+                            nCurDepositCalc -= (int)(nOrderVolume * ea[nCurIdx].nCurLimitPrice * (1 + VIRTUAL_STOCK_FEE)); // 예수금에서 매매수수료까지 포함해서 차감
 
                             testTextBox.AppendText(sTradeTime + " : " + sCode + ", " + nOrderVolume.ToString() + "(주) 매수 접수완료 \r\n"); //++
                                                                                                                                       //---------------------------------------------
@@ -2939,8 +2885,8 @@ namespace MJTradier
                                                                                                                                       // buySlotArray에 설정되는 과정으로 마쳐진다.
                             buySlotArray[nCurIdx, nCurBuySlotIdx].isSelled = false;
                             buySlotArray[nCurIdx, nCurBuySlotIdx].isAllBuyed = false;
-                            buySlotArray[nCurIdx, nCurBuySlotIdx].fTargetPer = eachStockArray[nCurIdx].fTargetPercent;
-                            buySlotArray[nCurIdx, nCurBuySlotIdx].fBottomPer = eachStockArray[nCurIdx].fBottomPercent;
+                            buySlotArray[nCurIdx, nCurBuySlotIdx].fTargetPer = ea[nCurIdx].fTargetPercent;
+                            buySlotArray[nCurIdx, nCurBuySlotIdx].fBottomPer = ea[nCurIdx].fBottomPercent;
                             buySlotArray[nCurIdx, nCurBuySlotIdx].nBuyPrice = 0;
                             buySlotArray[nCurIdx, nCurBuySlotIdx].nBuyVolume = 0;
                         }
@@ -2954,18 +2900,18 @@ namespace MJTradier
 
                         if (nNoTradeVolume == 0)
                         {
-                            if (eachStockArray[nCurIdx].nSellReqCnt > 0) //** 아침에 어제 매도 안된 애들이 남아있으면 sellReqCnt가 음수가 될 수 도 있으니 0이 넘어야만 차감되게끔 한다.
-                                eachStockArray[nCurIdx].nSellReqCnt--;
+                            if (ea[nCurIdx].nSellReqCnt > 0) //** 아침에 어제 매도 안된 애들이 남아있으면 sellReqCnt가 음수가 될 수 도 있으니 0이 넘어야만 차감되게끔 한다.
+                                ea[nCurIdx].nSellReqCnt--;
 
-                            eachStockArray[nCurIdx].isOrderStatus = false; // 매매중 off
+                            ea[nCurIdx].isOrderStatus = false; // 매매중 off
                             testTextBox.AppendText(sTradeTime + " : " + sCode + " 매도 체결완료 \r\n"); //++
                         }
                     }
                     else if (sOrderStatus.Equals("접수"))
                     {
                         testTextBox.AppendText(sTradeTime + " : " + sCode + ", " + nOrderVolume.ToString() + "(주) 매도 접수완료 \r\n"); //++
-                        eachStockArray[nCurIdx].isOrderStatus = true; // 매매중 on
-                        eachStockArray[nCurIdx].sCurOrgOrderId = sOrderId; // 원주문번호
+                        ea[nCurIdx].isOrderStatus = true; // 매매중 on
+                        ea[nCurIdx].sCurOrgOrderId = sOrderId; // 원주문번호
                     }
                 } // END ---- orderType.Equals("매도")
                 else if (sOrderType.Equals("매수취소"))
@@ -2987,14 +2933,14 @@ namespace MJTradier
                     }
                     else if (sOrderStatus.Equals("확인"))
                     {
-                        eachStockArray[nCurIdx].isCancelComplete = true; // 매수취소 완료
+                        ea[nCurIdx].isCancelComplete = true; // 매수취소 완료
 
                         // 매수취소확인은 사실상 매수취소 수량이 있는거고 미체결량은 0인 상태일 테지만 
                         // 예기치 못한 오류로 인해 문제가 생길 수 도 있으니
                         // 매수취소 수량과 미체결량을 검사해준다.
                         if (nNoTradeVolume < nOrderVolume && nOrderVolume > 0) // 매수취소된 수량이 있다면
                         {
-                            nCurDepositCalc += (int)((nOrderVolume - nNoTradeVolume) * (eachStockArray[nCurIdx].nCurLimitPrice * (1 + VIRTUAL_STOCK_FEE)));
+                            nCurDepositCalc += (int)((nOrderVolume - nNoTradeVolume) * (ea[nCurIdx].nCurLimitPrice * (1 + VIRTUAL_STOCK_FEE)));
                         }
 
                     }
@@ -3009,7 +2955,7 @@ namespace MJTradier
                 nCurIdx = eachStockIdxArray[nCodeIdx];
 
                 int nHoldingQuant = Math.Abs(int.Parse(axKHOpenAPI1.GetChejanData(930))); // 보유수량
-                eachStockArray[nCurIdx].nHoldingsCnt = nHoldingQuant;
+                ea[nCurIdx].nHoldingsCnt = nHoldingQuant;
             } // End ---- e.sGubun.Equals("1") : 잔고
         }
 
