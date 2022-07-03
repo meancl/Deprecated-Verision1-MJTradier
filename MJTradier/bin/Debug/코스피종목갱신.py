@@ -2,7 +2,7 @@ from pykrx import stock
 from datetime import datetime, timedelta
 
 
-yesterday = datetime.now() #- timedelta(1)
+yesterday = datetime.now() #- timedelta(2)
 dtype_yesterday = datetime.strftime(yesterday, '%Y%m%d')
 
 kospi_df = stock.get_market_ticker_list(market= 'KOSPI')

@@ -66,6 +66,8 @@
             public double fPowerWithoutGap; // 시초가 등락율
             public double fPower; // 전일종가 등락률 
             public double fPrevPowerWithoutGap; // 이전 시초가 등락율;
+            public double fPlusCnt;
+            public double fMinusCnt;
             public double fMaxPowerWithoutGap;
             public double fMinPowerWithoutGap;
 
@@ -175,7 +177,7 @@
 
             // 체결량
             public int nTrade200Time;
-            public int nTrade150Time;
+            public int nTrade150Time; 
             public int nTrade100Time;
             public int nTrade70Time;
 
