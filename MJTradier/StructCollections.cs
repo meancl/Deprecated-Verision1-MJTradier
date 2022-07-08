@@ -16,6 +16,7 @@
             public string sCode; // 종목번호
             public string sCodeName; // 종목명
             public int nMarketGubun; // 코스닥번호면 코스닥, 코스피번호면 코스피
+            public string sMarketGubunTag;
             public long lShareOutstanding; // 유통주식수
             public long lFullNumOfStock;
             public double fShareOutstandingRatio; // 유통비율
@@ -66,8 +67,11 @@
             public double fPowerWithoutGap; // 시초가 등락율
             public double fPower; // 전일종가 등락률 
             public double fPrevPowerWithoutGap; // 이전 시초가 등락율;
-            public double fPlusCnt;
-            public double fMinusCnt;
+            public double fPlusCnt09;
+            public double fMinusCnt09;
+
+            public double fPlusCnt07;
+            public double fMinusCnt07;
             public double fMaxPowerWithoutGap;
             public double fMinPowerWithoutGap;
 
@@ -203,9 +207,78 @@
             public long lCurTotalPriceOfStock;
 
 
-            public double fEverageFlowLine;
-            public double fRecentEverageFlowLine;
-            public double fFluctuationVar;
+            // 각도확인용 변수
+            // 상대적
+            public double fRelativeEverageAngle;
+            public double fRelativeRecentAngle;
+            public double fRelativeRightAngle;
+            public double fRelativeMaxAngle;
+            public double fRelativeMinAngle;
+            public double fRelativeInitAngle;
+            // 고정적
+            public double fAbsoluteEverageAngle;
+            public double fAbsoluteRecentAngle;
+            public double fAbsoluteRightAngle;
+            public double fAbsoluteMaxAngle;
+            public double fAbsoluteMinAngle;
+            public double fAbsoluteInitAngle;
+
+            public double fPrevAbsoluteInitAngle;
+
+            // 기울기확인용 변수
+            // 상대적
+            public double fRelativeEverageSlope;
+            public double fRelativeRecentSlope;
+            public double fRelativeRightSlope;
+            public double fRelativeMaxSlope;
+            public double fRelativeMinSlope;
+            public double fRelativeInitSlope;
+            // 절대적
+            public double fAbsoluteEverageSlope;
+            public double fAbsoluteRecentSlope;
+            public double fAbsoluteRightSlope;
+            public double fAbsoluteMaxSlope;
+            public double fAbsoluteMinSlope;
+            public double fAbsoluteInitSlope;
+
+            // 분산확인용 변수
+            // 시작점
+            public double fStartPointEverageVariance;
+            public double fStartPointRecentVariance; 
+            public double fStartPointRightVariance;
+            // 끝점
+            public double fEndPointEverageVariance;
+            public double fEndPointRecentVariance;
+            public double fEndPointRightVariance;
+            // 초기기준
+            public double fInitPointEverageVariance;
+
+            public double fRelativeMove;
+            public double fAbsoluteMove;
+            public bool is60Crush;
+            public bool is70Crush;
+            public bool is80Crush;
+
+            public bool isM70Max;
+            public int nM70MaxTime;
+            public bool isM70Done;
+            public bool isM60Max;
+            public int nM60MaxTime;
+            public bool isM60Done;
+            public bool isM50Max;
+            public int nM50MaxTime;
+            public bool isM50Done;
+
+            public int nUpCntOfSlope;
+            public double fUpRatioOfSlope;
+            public double fDiffOfSlope;
+
+            public int nJumpCnt; // 1분씩 가격기록을 하는데 데이터 사이 간격이 1분이 넘었을 경우 가격(분단위)만큼  카운트함
+            public double fTenMinutePower; // 10분 간 가격변화율 (어제종가 기준)
+            public int nTenMinuteUpCnt; // 10분 간 상승갯수
+            public double fTenMinuteMaxMove; // 10분 간 1분 가격변화 최대 상승률
+            public int nContinuosUpCnt; // 최근 연속상승갯수
+            public double fContinuosUpPower; // 최근 연속상승률
         }
 
 
